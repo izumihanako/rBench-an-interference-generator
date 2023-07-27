@@ -34,10 +34,10 @@ extern double time_now(void) ;
 }
 
 enum cpu_cache_type_t {
-	CACHE_TYPE_UNKNOWN = 0,		/* Unknown type */
-	CACHE_TYPE_DATA,		    /* D$ */
-	CACHE_TYPE_INSTRUCTION,		/* I$ */
-	CACHE_TYPE_UNIFIED,		    /* D$ + I$ */
+    CACHE_TYPE_UNKNOWN = 0,     /* Unknown type */
+    CACHE_TYPE_DATA,            /* D$ */
+    CACHE_TYPE_INSTRUCTION,     /* I$ */
+    CACHE_TYPE_UNIFIED,         /* D$ + I$ */
 } ;
 
 struct cpucache_t{
@@ -98,36 +98,36 @@ struct mwc_t {
 
 
 /* Memory size constants */
-#define KB			(1ULL << 10)
-#define	MB			(1ULL << 20)
-#define GB			(1ULL << 30)
-#define TB			(1ULL << 40)
-#define PB			(1ULL << 50)
-#define EB			(1ULL << 60)
+#define KB            (1ULL << 10)
+#define    MB            (1ULL << 20)
+#define GB            (1ULL << 30)
+#define TB            (1ULL << 40)
+#define PB            (1ULL << 50)
+#define EB            (1ULL << 60)
 
-#define ONE_BILLION		    (1.0E9)
-#define ONE_MILLION		    (1.0E6)
-#define ONE_THOUSAND		(1.0E3)
-#define ONE_BILLIONTH		(1.0E-9)
-#define ONE_MILLIONTH		(1.0E-6)
-#define ONE_THOUSANDTH		(1.0E-3)
+#define ONE_BILLION            (1.0E9)
+#define ONE_MILLION            (1.0E6)
+#define ONE_THOUSAND        (1.0E3)
+#define ONE_BILLIONTH        (1.0E-9)
+#define ONE_MILLIONTH        (1.0E-6)
+#define ONE_THOUSANDTH        (1.0E-3)
 
 // attributes ::
-#define ALIGNED(a)	        __attribute__((aligned(a)))
+#define ALIGNED(a)            __attribute__((aligned(a)))
 // Force alignment to nearest 128 bytes
-#define ALIGN128	        ALIGNED(128)
+#define ALIGN128            ALIGNED(128)
 // Force alignment to nearest 64 bytes
-#define ALIGN64		        ALIGNED(64)
+#define ALIGN64                ALIGNED(64)
 #define ALIGN_CACHELINE     ALIGN64
 #define WEAK                __attribute__((weak))
 // optimisation on branching
 #define UNLIKELY(x)         __builtin_expect((x),0)
 #define LIKELY(x)           __builtin_expect((x),1)
 // optimize attribute 
-#define HOT		            __attribute__ ((hot))
-#define OPTIMIZE3 	        __attribute__((optimize("-O3")))
-#define OPTIMIZE2 	        __attribute__((optimize("-O2")))
-#define OPTIMIZE0	        __attribute__((optnone))
+#define HOT                    __attribute__ ((hot))
+#define OPTIMIZE3             __attribute__((optimize("-O3")))
+#define OPTIMIZE2             __attribute__((optimize("-O2")))
+#define OPTIMIZE0            __attribute__((optnone))
 
 // vitural memory page size is 4K when traslating from level-4 page table 
 #define PAGESIZE            4096
