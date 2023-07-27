@@ -3,11 +3,15 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <cstring>
 #include <algorithm>
 #include <cstdint>
+#include <vector>
 #include <ctime>
 #include <thread>
+#include <fstream>
+#include <sstream>
 #include <sched.h>
 #include <ctype.h>
 #include <fcntl.h>
@@ -16,6 +20,11 @@
 #include <sys/time.h>
 using std::pair ;
 using std::make_pair ;
+using std::vector ;
+using std::ios ;
+using std::fstream ;
+using std::string ;
+using std::shared_ptr ;
 
 namespace mytime{
     
@@ -23,6 +32,35 @@ extern double timeval_to_double(const struct timeval *tv) ;
 extern double time_now(void) ;
 
 }
+
+enum cpu_cache_type_t {
+	CACHE_TYPE_UNKNOWN = 0,		/* Unknown type */
+	CACHE_TYPE_DATA,		    /* D$ */
+	CACHE_TYPE_INSTRUCTION,		/* I$ */
+	CACHE_TYPE_UNIFIED,		    /* D$ + I$ */
+} ;
+
+struct cpucache_t{
+    cpu_cache_type_t type ;
+    uint32_t level ;
+    uint32_t line_size ;        // Byte
+    uint32_t ways ;             // number of slots of one set
+    uint32_t sets ; 
+    uint64_t size ;             // Byte
+    shared_ptr<char> buffer ;
+} ;
+
+struct cpuinfo_t {
+    int32_t page_size ;         // Byte
+    int32_t core_count ;
+    int32_t online_count ;
+    int32_t cache_count ;
+    cpucache_t caches[10] ;
+    cpuinfo_t() ;
+    void get_cpuinfo() ;
+    void print_cpuinfo() ;
+} ;
+
 
 /* Fast random numbers */
 /* MWC random number initial seed */

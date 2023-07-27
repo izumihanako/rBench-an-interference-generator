@@ -2,7 +2,8 @@
     "files.associations": {
         "stdio.h": "c",
         "cstdio": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "fstream": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
