@@ -1,3 +1,7 @@
+.cpuinfo 
+.interrupts
+
+
 # Prerequisites
 *.d
 
