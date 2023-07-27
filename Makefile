@@ -29,7 +29,7 @@ CORE_SRC = \
 
 SRC = $(CORE_SRC) $(SOI_SRC)
 OBJS += $(SRC:.cpp=.o)
-BINNAME = rbench
+BINNAME = rbench.exe
 
 all : rbench
 
@@ -39,9 +39,10 @@ all : rbench
 	$(CC) $(CFLAGS) -c $< -o $@
 
 rbench: $(OBJS)
-	$(LD) $(OBJS) -o $@ $(LDLIBS)
+	$(LD) $(OBJS) -o ${BINNAME} $(LDLIBS)
 
 .PHONY: clean
 clean:
 	rm -f ${DESTDIR}$(BINNAME)
 	rm -f ${DESTDIR}$(OBJS)
+	rm -f ${DESTDIR}*.exe
