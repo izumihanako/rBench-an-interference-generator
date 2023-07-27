@@ -102,12 +102,22 @@ void cpuinfo_t::get_cpuinfo(){
             }
             fs.close() ;
             caches[index].buffer = shared_ptr<char>( new char[ caches[index].size ] ) ;
-        }
+        } else {
+			printf( "warning:\n") ;
+			printf( "  at cache index %d:\n" , index ) ;
+			printf( "  read cache size error\n" ) ;
+			printf( "  cannot open file: %s\n" , file.c_str() ) ;
+		}
     }
+	if( cache_count == 0 ){
+		printf( "warning:\n") ;
+		printf( "  attempt to read cache info, but found no cache" );
+	}
+	return ;
 }
 
 void cpuinfo_t::print_cpuinfo() {
-    const char* cache_type_txt[] = {
+    static const char* cache_type_txt[] = {
         "CACHE_TYPE_UNKNOWN" ,
         "CACHE_TYPE_DATA" , 
         "CACHE_TYPE_INSTRUCTION" ,

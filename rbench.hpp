@@ -33,6 +33,20 @@ extern double time_now(void) ;
 
 }
 
+enum argvopt_t{
+    OPT_undefined = 0 , 
+    // short options 
+    OPT_run      = 'r' ,
+    OPT_threads  = 't' ,
+    OPT_limited  = 'l' ,
+    // long options only
+    OPT_long_ops_start = 0x7f ,
+    OPT_examine ,
+    OPT_cacheL1 ,
+    opt_cacheL2 ,
+    opt_cacheL3 ,
+} ;
+
 enum cpu_cache_type_t {
     CACHE_TYPE_UNKNOWN = 0,     /* Unknown type */
     CACHE_TYPE_DATA,            /* D$ */
