@@ -33,12 +33,24 @@ extern double time_now(void) ;
 
 }
 
+struct bench_args_t{
+    uint32_t threads ;
+    bool is_limited ;
+    uint32_t limit_round ;
+    uint32_t time ;
+    uint32_t strength ;
+    uint32_t mem_bandwidth ;
+} ;
+
 enum argvopt_t{
     OPT_undefined = 0 , 
     // short options 
-    OPT_run      = 'r' ,
-    OPT_threads  = 't' ,
-    OPT_limited  = 'l' ,
+    OPT_run            = 'r' ,
+    OPT_ninstance      = 'n' ,
+    OPT_limited        = 'l' ,
+    OPT_time           = 't' ,
+    OPT_strength       = 's' ,
+    OPT_mem_bandwidth  = 'b' ,
     // long options only
     OPT_long_ops_start = 0x7f ,
     OPT_examine ,
