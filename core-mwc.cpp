@@ -15,8 +15,8 @@ inline void mwc_t::flush(){
     n1 = saved1 = 0 ;
 }
 
-//    dirty mwc reseed, this is expensive as it
-//    pulls in various system values for the seeding
+// dirty mwc reseed, this is expensive as it
+// pulls in various system values for the seeding
 void mwc_t::reseed(){
     double time_db = time_now() ;
     const uint64_t time_rnd = alias_cast<uint64_t>( time_db ) ;
@@ -59,7 +59,7 @@ void mwc_t::print_info() {
 // mwc32: Multiply-with-carry random numbers
 // fast pseudo random number generator, see
 // http://www.cse.yorku.ca/~oz/marsaglia-rng.html
-uint32_t HOT OPTIMIZE3 mwc_t::mwc32(){
+inline uint32_t HOT OPTIMIZE3 mwc_t::mwc32(){
     z = 36969 * (z & 65535) + (z >> 16);
     w = 18000 * (w & 65535) + (w >> 16);
     return (z << 16) + w;

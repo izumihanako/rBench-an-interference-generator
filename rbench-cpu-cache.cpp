@@ -1,17 +1,13 @@
-// gcc bubblecache.c -o bubblecache -std=gnu11
+// Bubble-up method
+// https://ieeexplore.ieee.org/document/7851476
 #include "rbench.hpp"
 
 #define L1_SIZE (32768)
 #define L2_SIZE (1048576)
 #define L3_SIZE (14417920)
-
-// Galois LFSR
-#define MASK 0xd0000001u
-#define rand ( lfsr = ( lfsr >> 1 ) ^ ( unsigned int ) \
-               ( 0 - ( lfsr & 1u ) & MASK ) )
 #define CACHE_LINE (64)
 #define CACHE_SIZE 14417920
-#define r (rand%CACHE_SIZE)
+
 const uint32_t OP_LIMIT = 2000000000 ;
 
 static void rand_access( 

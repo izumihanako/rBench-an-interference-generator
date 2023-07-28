@@ -25,7 +25,8 @@ SOI_SRC = \
 
 # Source of interferences(SOI) core file
 CORE_SRC = \
-	core-mwc.cpp
+	core-mwc.cpp \
+	core-lfsr.cpp 
 
 SRC = $(CORE_SRC) $(SOI_SRC)
 OBJS += $(SRC:.cpp=.o)

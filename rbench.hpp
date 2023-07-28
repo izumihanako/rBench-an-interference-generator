@@ -124,9 +124,18 @@ struct cpuinfo_t {
     void print_cpuinfo() ;
 } ;
 
+/* Fast random numbers : Galois LFSR 32bit random numbers */
+// http://www.cse.yorku.ca/~oz/marsaglia-rng.html
+struct Galois_LFSR{
+    uint32_t lfsr ;
+    Galois_LFSR() ;
+    void set_LFSR_number( uint32_t ) ;
+    uint32_t lfsr32() ;
+    uint64_t lfsr64() ;
+} ;
 
-/* Fast random numbers */
-/* MWC random number initial seed */
+/* Fast random numbers : Multiply-with-carry random numbers */
+// MWC random number initial seed
 #define MWC_SEED_W    (521288629UL)
 #define MWC_SEED_Z    (362436069UL)
 struct mwc_t {
