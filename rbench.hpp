@@ -33,6 +33,13 @@ extern double time_now(void) ;
 
 }
 
+struct help_info_t{
+    const char *opt_short ;
+    const char *opt_long ;
+    const char *opt_alter ;
+    const char *description ;
+} ;
+
 struct bench_args_t{
     uint32_t threads ;
     bool is_limited ;
@@ -45,18 +52,19 @@ struct bench_args_t{
 enum argvopt_t{
     OPT_undefined = 0 , 
     // short options 
-    OPT_run            = 'r' ,
-    OPT_ninstance      = 'n' ,
     OPT_limited        = 'l' ,
-    OPT_time           = 't' ,
-    OPT_strength       = 's' ,
     OPT_mem_bandwidth  = 'b' ,
+    OPT_ninstance      = 'n' ,
+    OPT_run            = 'r' ,
+    OPT_strength       = 's' ,
+    OPT_time           = 't' ,
     // long options only
     OPT_long_ops_start = 0x7f ,
-    OPT_examine ,
     OPT_cacheL1 ,
-    opt_cacheL2 ,
-    opt_cacheL3 ,
+    OPT_cacheL2 ,
+    OPT_cacheL3 ,
+    OPT_cache_size ,
+    OPT_examine ,
 } ;
 
 enum cpu_cache_type_t {
