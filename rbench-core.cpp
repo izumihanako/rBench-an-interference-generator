@@ -1,23 +1,30 @@
 #include "rbench.hpp"
 
-namespace mytime{
-
-double OPTIMIZE3 timeval_to_double(const struct timeval *tv)
-{
-    return (double)tv->tv_sec + ((double)tv->tv_usec * ONE_MILLIONTH);
+double OPTIMIZE3 timeval_to_double( const struct timeval *tv ) {
+    return (double)tv->tv_sec + ( (double)tv->tv_usec * ONE_MILLIONTH ) ;
 }
 
-double OPTIMIZE3 time_now(void)
-{
+double OPTIMIZE3 time_now() {
     timeval now;
-
-    if (gettimeofday(&now, NULL) < 0)
-        return -1.0;
-
-    return timeval_to_double(&now);
+    if ( gettimeofday( &now, NULL ) < 0 )
+        return -1.0 ;
+    return timeval_to_double( &now ) ;
 }
 
+void set_arg_flag( uint32_t& flags , argflag_t id ){
+	flags |= ( 1 << static_cast<int>(id) ) ;
 }
+
+void clr_arg_flag( uint32_t& flags , argflag_t id ) {
+	if( flags & ( 1 << static_cast<int>(id) ) ){
+		flags -= ( 1 << static_cast<int>(id) ) ;
+	}
+}
+
+bool get_arg_flag( const uint32_t flags , argflag_t id ){
+	return ( flags & ( 1 << static_cast<int>(id) ) ) >> id ;
+}
+
 
 cpuinfo_t::cpuinfo_t(){
     page_size = 0 ;

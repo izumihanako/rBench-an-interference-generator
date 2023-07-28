@@ -18,7 +18,7 @@ inline void mwc_t::flush(){
 //    dirty mwc reseed, this is expensive as it
 //    pulls in various system values for the seeding
 void mwc_t::reseed(){
-    double time_db = mytime::time_now() ;
+    double time_db = time_now() ;
     const uint64_t time_rnd = alias_cast<uint64_t>( time_db ) ;
     const intptr_t p1 = (intptr_t)(this) ;
     const intptr_t p2 = (intptr_t)&time_db ;
@@ -47,6 +47,13 @@ pair<uint32_t,uint32_t> mwc_t::get_seed(){
 // restore seed pair (w,z) to default settings
 void mwc_t::set_default_seed(){
     set_seed( MWC_SEED_W , MWC_SEED_Z ) ;
+}
+
+// debug info 
+void mwc_t::print_info() {
+    printf( "MWC random generator:\n" ) ;
+    printf( "seeds: w = %u, z = %u\n" , w , z ) ;
+    printf( "generate random numbers: %u %u %u\n" , mwc32() , mwc32() , mwc32() ) ;
 }
 
 // mwc32: Multiply-with-carry random numbers

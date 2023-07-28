@@ -2,13 +2,16 @@
 
 static pid_t main_pid ;
 cpuinfo_t cpuinfo ;
+uint32_t global_flag ;
 
+// help options
 static const help_info_t help_entrys[] = {
     { NULL           , "cacheL1"        , NULL         , "run cacheL1 stressor" } ,
     { NULL           , "cacheL2"        , NULL         , "run cacheL2 stressor" } ,
     { NULL           , "cacheL3"        , NULL         , "run cacheL3 stressor" } ,
     { NULL           , "cache-size N"   , NULL         , "run cache stressor with cache size N" } ,
-    { NULL           , "examine"        , NULL         , "output examine information" } ,
+    { NULL           , "check"          , NULL         , "run preset system check missions" } ,
+    { NULL           , "debug"          , NULL         , "output debug information" } ,
     { "l N"          , "limited N"      , NULL         , "if limited, benchmark will stop after N rounds instead of running forever" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "for memBw stressor, stress mem bw for W MB/s" },
     { "n N"          , "ninstance N"    , "instance N" , "start N instances of benchmark" } ,
@@ -18,6 +21,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , NULL             , NULL         , NULL }
 } ;
 
+// GNU "long options" command line options
 static const struct option long_options[] = {
     { "limited"       , optional_argument , 0 , OPT_limited       } ,
     { "mem-bandwidth" , required_argument , 0 , OPT_mem_bandwidth } ,
@@ -31,15 +35,30 @@ static const struct option long_options[] = {
     { "cacheL2"       , no_argument       , 0 , OPT_cacheL2       } ,
     { "cacheL3"       , no_argument       , 0 , OPT_cacheL3       } ,
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
-    { "examine"       , no_argument       , 0 , OPT_examine       } ,
+    { "check"         , no_argument       , 0 , OPT_check         } ,
+    { "debug"         , no_argument       , 0 , OPT_debug         } ,
     { 0               , 0                 , 0 , 0                 }
 } ;
 
-void print_usage_help(){
-	size_t i;
-	const int cols = 80 ;
+static const map<string , bench_func_t > bench_funcs = {
+    pair< string , bench_func_t >( "cacheL1" , NULL ) ,
+    pair< string , bench_func_t >( "cacheL2" , NULL ) ,
+    pair< string , bench_func_t >( "cacheL3" , NULL ) ,
+} ;
 
-	for ( i = 0 ; help_entrys[i].description ; i++ ) {
+struct bench_mission_t{
+    bench_func_t func ;
+    bench_args_t args ;
+    bench_mission_t( const bench_func_t &func_ = NULL , const bench_args_t &args_ = bench_args_t() ){
+        func = func_ ;
+        args = args_ ;
+    }
+} ;
+vector<bench_mission_t> bench_missions ;
+
+void print_usage_help(){
+	const int cols = 80 ;
+	for ( int32_t i = 0 ; help_entrys[i].description ; i++ ) {
 		char opt_short[10] = "";
 		int wd = 0;
 		bool first = true ;
@@ -76,6 +95,8 @@ void print_usage_help(){
         if( ( !first ) || help_entrys[i].opt_alter )
             printf( "\n" ) ;
 	}
+    printf( "Note:\n") ;
+    printf( "  PLEASE specify the benchmark project BEFORE specifying the runtime parameters!!\n\n" ) ;
 }
 
 void parse_opts( int argc , char **argv ){
@@ -87,27 +108,49 @@ void parse_opts( int argc , char **argv ){
     }
     ::optind = 0 ;
     int c , option_index ;
+    bench_args_t *pargs ;
     while( true ){
         if( ( c = getopt_long( argc , argv , "?r:n:l::t:s:b:" , long_options , &option_index ) ) == -1 ){
             break ;
         }
         switch( c ){
-            case OPT_run :
-            break ;
+            case OPT_run :{
+                string bench_name = string( optarg ) ;
+                if( bench_funcs.count( bench_name ) ) {
+                    bench_missions.emplace_back( (*bench_funcs.find( bench_name )).second , *(new bench_args_t()) ) ;
+                    pargs = &( *bench_missions.rbegin() ).args ;
+                } else {
+                    printf( "Warning: no such benchmark named \"%s\", ignored\n" , optarg ) ;
+                }
+                break ;
+            }
+            case OPT_debug :{
+                set_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ;
+                break ;
+            }
+            default :{
+                break ;
+            }
         }
-
+    }
+    for( auto mission : bench_missions ){
+        mission.args.flags |= global_flag ;
     }
 }
 
 int main( int argc , char **argv , char **envp ){
-
-    mwc_t rndeng ;
-    printf( "%u %u,  %u\n" , rndeng.get_seed() , rndeng.mwc32() ) ;
+    main_pid = getpid() ;
     cpuinfo.get_cpuinfo() ;
+
     parse_opts( argc , argv ) ; 
 
-    // cpuinfo.print_cpuinfo() ;
+    if( get_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO) ){
+        mwc_t rndeng ;
+        rndeng.print_info() ;
+        cpuinfo.print_cpuinfo() ;
+    }
 
-    // main_pid = getpid() ;
-
+    for( auto mission : bench_missions ){
+        mission.func( mission.args ) ;
+    }
 }

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <vector>
+#include <map>
 #include <ctime>
 #include <thread>
 #include <fstream>
@@ -18,21 +19,21 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 using std::pair ;
 using std::make_pair ;
 using std::vector ;
+using std::map ;
 using std::ios ;
 using std::fstream ;
 using std::string ;
 using std::shared_ptr ;
 
-namespace mytime{
-    
 extern double timeval_to_double(const struct timeval *tv) ;
 extern double time_now(void) ;
 
-}
-
+// used For help message output
 struct help_info_t{
     const char *opt_short ;
     const char *opt_long ;
@@ -40,15 +41,40 @@ struct help_info_t{
     const char *description ;
 } ;
 
+// arguments passed to every benchmarks
+// unified interface
 struct bench_args_t{
     uint32_t threads ;
     bool is_limited ;
     uint32_t limit_round ;
     uint32_t time ;
     uint32_t strength ;
-    uint32_t mem_bandwidth ;
+    uint32_t flags ;
+    union{
+        uint32_t mem_bandwidth ;
+        uint32_t cache_size ;
+    } ;
+    bench_args_t(){
+        threads = 1 ;
+        is_limited = 0 ;
+        limit_round = 0 ;
+        time = 0 ;
+        strength = 100 ;
+        mem_bandwidth = 0 ;
+        cache_size = 0 ;
+    }
 } ;
+typedef int(* bench_func_t )( bench_args_t ) ;
 
+// benchmark flag arguments
+enum argflag_t{
+    FLAG_PRINT_DEBUG_INFO = 0 ,
+} ;
+void clr_arg_flag( uint32_t& , argflag_t ) ;
+void set_arg_flag( uint32_t& , argflag_t ) ;
+bool get_arg_flag( const uint32_t , argflag_t ) ;
+
+// Command line long options
 enum argvopt_t{
     OPT_undefined = 0 , 
     // short options 
@@ -64,7 +90,8 @@ enum argvopt_t{
     OPT_cacheL2 ,
     OPT_cacheL3 ,
     OPT_cache_size ,
-    OPT_examine ,
+    OPT_check ,
+    OPT_debug ,
 } ;
 
 enum cpu_cache_type_t {
@@ -74,6 +101,7 @@ enum cpu_cache_type_t {
     CACHE_TYPE_UNIFIED,         /* D$ + I$ */
 } ;
 
+// CPU cache information
 struct cpucache_t{
     cpu_cache_type_t type ;
     uint32_t level ;
@@ -81,9 +109,10 @@ struct cpucache_t{
     uint32_t ways ;             // number of slots of one set
     uint32_t sets ; 
     uint64_t size ;             // Byte
-    shared_ptr<char> buffer ;
+    shared_ptr<char> buffer ;   // not used, preserve space
 } ;
 
+// CPU information
 struct cpuinfo_t {
     int32_t page_size ;         // Byte
     int32_t core_count ;
@@ -116,6 +145,7 @@ struct mwc_t {
     void reseed() ;
     void set_seed( const uint32_t , const uint32_t ) ;
     void set_default_seed() ;
+    void print_info() ;
 
     pair<uint32_t,uint32_t> get_seed() ;
     uint32_t mwc32() ;
@@ -131,37 +161,38 @@ struct mwc_t {
 } ;
 
 
-/* Memory size constants */
+// Memory size constants
 #define KB            (1ULL << 10)
-#define    MB            (1ULL << 20)
+#define MB            (1ULL << 20)
 #define GB            (1ULL << 30)
 #define TB            (1ULL << 40)
 #define PB            (1ULL << 50)
 #define EB            (1ULL << 60)
 
-#define ONE_BILLION            (1.0E9)
-#define ONE_MILLION            (1.0E6)
-#define ONE_THOUSAND        (1.0E3)
-#define ONE_BILLIONTH        (1.0E-9)
-#define ONE_MILLIONTH        (1.0E-6)
-#define ONE_THOUSANDTH        (1.0E-3)
+// const number
+#define ONE_BILLION        (1.0E9)
+#define ONE_MILLION        (1.0E6)
+#define ONE_THOUSAND       (1.0E3)
+#define ONE_BILLIONTH     (1.0E-9)
+#define ONE_MILLIONTH     (1.0E-6)
+#define ONE_THOUSANDTH    (1.0E-3)
 
 // attributes ::
-#define ALIGNED(a)            __attribute__((aligned(a)))
+#define ALIGNED(a)          __attribute__((aligned(a)))
 // Force alignment to nearest 128 bytes
 #define ALIGN128            ALIGNED(128)
 // Force alignment to nearest 64 bytes
-#define ALIGN64                ALIGNED(64)
+#define ALIGN64             ALIGNED(64)
 #define ALIGN_CACHELINE     ALIGN64
 #define WEAK                __attribute__((weak))
 // optimisation on branching
 #define UNLIKELY(x)         __builtin_expect((x),0)
 #define LIKELY(x)           __builtin_expect((x),1)
 // optimize attribute 
-#define HOT                    __attribute__ ((hot))
-#define OPTIMIZE3             __attribute__((optimize("-O3")))
-#define OPTIMIZE2             __attribute__((optimize("-O2")))
-#define OPTIMIZE0            __attribute__((optnone))
+#define HOT                 __attribute__ ((hot))
+#define OPTIMIZE3           __attribute__((optimize("-O3")))
+#define OPTIMIZE2           __attribute__((optimize("-O2")))
+#define OPTIMIZE0           __attribute__((optnone))
 
 // vitural memory page size is 4K when traslating from level-4 page table 
 #define PAGESIZE            4096
@@ -184,5 +215,8 @@ T alias_cast(F raw_data){
     ac.raw = raw_data;
     return ac.data;
 }
+
+// benchmark entry function 
+
 
 #endif 
