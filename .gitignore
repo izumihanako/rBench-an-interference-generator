@@ -1,5 +1,6 @@
 .cpuinfo 
 .interrupts
+.gdbinit
 icmp
 
 

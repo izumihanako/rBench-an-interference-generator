@@ -59,7 +59,7 @@ void mwc_t::print_info() {
 // mwc32: Multiply-with-carry random numbers
 // fast pseudo random number generator, see
 // http://www.cse.yorku.ca/~oz/marsaglia-rng.html
-inline uint32_t HOT OPTIMIZE3 mwc_t::mwc32(){
+uint32_t HOT OPTIMIZE3 mwc_t::mwc32(){
     z = 36969 * (z & 65535) + (z >> 16);
     w = 18000 * (w & 65535) + (w >> 16);
     return (z << 16) + w;
@@ -156,6 +156,17 @@ uint32_t OPTIMIZE3 mwc_t::mwc32modn( const uint32_t mmod ){
         val = mwc32() ;
     } while( val >= threshold ) ;
     return val % mmod ;
+}
+
+uint32_t OPTIMIZE3 mwc_t::mwc32modn_maybe_pwr2( const uint32_t mmod ){
+    register const uint32_t mask = mmod - 1;
+	if (UNLIKELY(mmod == 0))
+		return 0;
+    if( ( mmod & mask ) == 0 ){
+        return mwc32() & ( mask ) ;
+    } else {
+        return mwc32modn( mmod ) ;
+    }
 }
 
 // return 64 bit non-modulo biased value 1..max (inclusive)

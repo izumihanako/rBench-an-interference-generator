@@ -3,7 +3,7 @@ VERSION=0.0.1
 KERNEL=$(shell uname -s)
 NODENAME=$(shell uname -n)
 
-CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11
+CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11 -g
 LD = g++
 LDLIBS = -pthread
 CC = g++
@@ -15,13 +15,13 @@ endif
 
 # Header files
 HEADERS = \
-	rbench-core.hpp \
 	rbench.hpp
 
 #  Source of interferences(SOI) source file
 SOI_SRC = \
 	rbench.cpp \
-	rbench-core.cpp
+	rbench-core.cpp \
+	rbench-cpu-cache.cpp 
 
 # Source of interferences(SOI) core file
 CORE_SRC = \

@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include <ctime>
+#include <mutex>
 #include <thread>
 #include <fstream>
 #include <sstream>
@@ -23,6 +24,8 @@
 #include <sys/stat.h>
 using std::pair ;
 using std::make_pair ;
+using std::mutex ;
+using std::thread ;
 using std::vector ;
 using std::map ;
 using std::ios ;
@@ -45,30 +48,35 @@ struct help_info_t{
 // unified interface
 struct bench_args_t{
     uint32_t threads ;
-    bool is_limited ;
     uint32_t limit_round ;
     uint32_t time ;
-    uint32_t strength ;
+    uint32_t strength ; // run strength% time per period
     uint32_t flags ;
+    uint32_t period ; // us 
     union{
-        uint32_t mem_bandwidth ;
-        uint32_t cache_size ;
+        uint64_t mem_bandwidth ;
+        uint64_t cache_size ;
     } ;
     bench_args_t(){
         threads = 1 ;
-        is_limited = 0 ;
         limit_round = 0 ;
         time = 0 ;
+        period = 100000 ;
         strength = 100 ;
         mem_bandwidth = 0 ;
         cache_size = 0 ;
+        flags = 0 ;
     }
+    void print_argsinfo() ;
 } ;
-typedef int(* bench_func_t )( bench_args_t ) ;
+typedef int32_t(* bench_func_t )( bench_args_t ) ;
+extern uint32_t global_flag ;
 
 // benchmark flag arguments
 enum argflag_t{
     FLAG_PRINT_DEBUG_INFO = 0 ,
+    FLAG_IS_LIMITED ,
+    FLAG_COUNT ,
 } ;
 void clr_arg_flag( uint32_t& , argflag_t ) ;
 void set_arg_flag( uint32_t& , argflag_t ) ;
@@ -92,6 +100,7 @@ enum argvopt_t{
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
+    OPT_period ,
 } ;
 
 enum cpu_cache_type_t {
@@ -120,9 +129,11 @@ struct cpuinfo_t {
     int32_t cache_count ;
     cpucache_t caches[10] ;
     cpuinfo_t() ;
-    void get_cpuinfo() ;
+    void read_cpuinfo() ;
+    uint64_t get_data_cache_size_level( uint32_t ) ;
     void print_cpuinfo() ;
 } ;
+extern cpuinfo_t cpuinfo ;
 
 /* Fast random numbers : Galois LFSR 32bit random numbers */
 // http://www.cse.yorku.ca/~oz/marsaglia-rng.html
@@ -159,6 +170,7 @@ struct mwc_t {
     pair<uint32_t,uint32_t> get_seed() ;
     uint32_t mwc32() ;
     uint32_t mwc32modn( const uint32_t mmod ) ;
+    uint32_t mwc32modn_maybe_pwr2( const uint32_t mmod ) ;
     uint16_t mwc16() ;
     uint16_t mwc16modn( const uint16_t mmod ) ;
     uint64_t mwc64() ;
@@ -207,6 +219,7 @@ struct mwc_t {
 #define PAGESIZE            4096
 // vitural memory page size is 2M when traslating from level-3 page table 
 #define PAGESIZEHUGE        2097152
+#define UNIVERSAL_CACHELINE 64
 
 // alias_cast to avoid "dereferencing type-punned pointer will break strict-aliasing rules" warning
 template<typename T, typename F>
@@ -225,7 +238,25 @@ T alias_cast(F raw_data){
     return ac.data;
 }
 
-// benchmark entry function 
+// strength run time calculator 
+// params: ( sgl_time , strength , period , module_runrounds , module_sleepus )
+void strength_to_time( const double  , const uint32_t , const uint32_t , 
+                       int32_t& , int32_t& ) ;
 
+// benchmark entry function 
+int32_t cache_bench_entry( bench_args_t ) ;
+
+
+// mutex print 
+extern mutex global_pr_mtx ;
+void pr_warning( string ) ;
+void pr_warning( char* ) ;
+void pr_error( string ) ;
+void pr_error( char* ) ;
+void pr_info( string ) ;
+void pr_info( char* ) ;
+void pr_debug( string ) ;
+void pr_debug( char* ) ;
+void pr_debug( void(* prfunc )() ) ;
 
 #endif 
