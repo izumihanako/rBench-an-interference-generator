@@ -10,15 +10,16 @@ static const help_info_t help_entrys[] = {
     { NULL           , "cacheL1"        , NULL         , "run cacheL1 stressor" } ,
     { NULL           , "cacheL2"        , NULL         , "run cacheL2 stressor" } ,
     { NULL           , "cacheL3"        , NULL         , "run cacheL3 stressor" } ,
-    { NULL           , "cache-size N"   , NULL         , "run cache stressor with cache size N" } ,
-    { NULL           , "check"          , NULL         , "run preset system check missions" } ,
+    { NULL           , "cache-size N"   , NULL         , "specify the size of the cache buffer of the cache stressor as N" } ,
+    { NULL           , "check"          , NULL         , "run preset system check tasks" } ,
     { NULL           , "debug"          , NULL         , "output debug information" } ,
     { "l N"          , "limited N"      , NULL         , "if limited, benchmark will stop after N rounds instead of running forever" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "for memBw stressor, stress mem bw for W MB/s" },
     { "n N"          , "ninstance N"    , "instance N" , "start N instances of benchmark" } ,
     { NULL           , "period N"       , NULL         , "If specified, the time granularity is N microseconds" } ,
-    { "r NAME"       , "run NAME"       , NULL         , "run the specified benchmark"    } ,
-    { "s P"          , "strength N"     , NULL         , "stress CPU by P%, for every instance ( run P% time per time granularity )" } ,
+    { "r NAME"       , "run NAME"       , NULL         , "run the specified benchmark. Supported test items are cacheL1, cacheL2, "
+                                                         "cacheL3, cache, "    } ,
+    { "s P"          , "strength N"     , NULL         , "set load strength to P% for every instance (run P% time per time granularity)" } ,
     { "t N"          , "time N"         , NULL         , "if specified, benchmark will stop after N seconds instead of running forever" } ,
     { NULL           , NULL             , NULL         , NULL }
 } ;
@@ -50,17 +51,18 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cacheL3" , &cache_bench_entry ) ,
 } ;
 
-struct bench_mission_t{
+struct bench_task_t{
     bench_func_t func ;
     bench_args_t args ;
-    bench_mission_t( const bench_func_t &func_ = NULL , const bench_args_t &args_ = bench_args_t() ){
+    bench_task_t( const bench_func_t &func_ = NULL , const bench_args_t &args_ = bench_args_t() ){
         func = func_ ;
         args = args_ ;
     }
 } ;
-vector<bench_mission_t> bench_missions ;
+vector<bench_task_t> bench_tasks ;
 
 void print_usage_help(){
+    printf( "Usage :\n" ) ;
 	const int cols = 80 ;
 	for ( int32_t i = 0 ; help_entrys[i].description ; i++ ) {
 		char opt_short[10] = "";
@@ -71,19 +73,19 @@ void print_usage_help(){
 
 		if( help_entrys[i].opt_short )
 			snprintf( opt_short, sizeof(opt_short), "-%s," , help_entrys[i].opt_short ) ;
-		printf( "%-10s--%-22s" , opt_short , help_entrys[i].opt_long ) ;
+		printf( "%-9s--%-20s" , opt_short , help_entrys[i].opt_long ) ;
         if( help_entrys[i].opt_alter )
-            printf( "\n%-10s--%-22s" , " " , help_entrys[i].opt_alter ) ;
+            printf( "\n%-9s--%-20s" , " " , help_entrys[i].opt_alter ) ;
 
 		for (ptr = start; *ptr; ptr++) {
 			if (*ptr == ' ')
 				space = ptr;
 			wd++;
-			if (wd >= cols - 34) {
+			if (wd >= cols - 20) {
 				const size_t n = (size_t)(space - start);
 
 				if (!first)
-					(void)printf("%-34s", "");
+					(void)printf("%-31s", "");
 				first = false;
 				(void)printf("%*.*s\n", (int)n, (int)n, start);
 				start = space + 1;
@@ -93,7 +95,7 @@ void print_usage_help(){
 		if (start != ptr) {
 			const int n = (int)(ptr - start);
 			if (!first)
-				(void)printf("%-34s", "");
+				(void)printf("%-31s", "");
 			(void)printf("%*.*s\n", n, n, start);
 		}
         if( ( !first ) || help_entrys[i].opt_alter )
@@ -134,8 +136,8 @@ void parse_opts( int argc , char **argv ){
             case OPT_run :{
                 string bench_name = string( optarg ) ;
                 if( bench_funcs.count( bench_name ) ) {
-                    bench_missions.emplace_back( (*bench_funcs.find( bench_name )).second , *(new bench_args_t()) ) ;
-                    pargs = &( *bench_missions.rbegin() ).args ;
+                    bench_tasks.emplace_back( (*bench_funcs.find( bench_name )).second , *(new bench_args_t()) ) ;
+                    pargs = &( *bench_tasks.rbegin() ).args ;
                     if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
                     } else if( !strncasecmp( optarg , "cacheL2" , 7 ) ){
@@ -204,8 +206,8 @@ void parse_opts( int argc , char **argv ){
             }
         }
     }
-    for( auto mission : bench_missions ){
-        mission.args.flags |= global_flag ;
+    for( auto task : bench_tasks ){
+        task.args.flags |= global_flag ;
     }
 }
 
@@ -221,7 +223,7 @@ int main( int argc , char **argv , char **envp ){
         cpuinfo.print_cpuinfo() ;
     }
 
-    for( auto mission : bench_missions ){
-        mission.func( mission.args ) ;
+    for( auto task : bench_tasks ){
+        task.func( task.args ) ;
     }
 }
