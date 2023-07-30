@@ -7,9 +7,6 @@ uint32_t global_flag ;
 
 // help options
 static const help_info_t help_entrys[] = {
-    { NULL           , "cacheL1"        , NULL         , "run cacheL1 stressor" } ,
-    { NULL           , "cacheL2"        , NULL         , "run cacheL2 stressor" } ,
-    { NULL           , "cacheL3"        , NULL         , "run cacheL3 stressor" } ,
     { NULL           , "cache-size N"   , NULL         , "specify the size of the cache buffer of the cache stressor as N" } ,
     { NULL           , "check"          , NULL         , "run preset system check tasks" } ,
     { NULL           , "debug"          , NULL         , "output debug information" } ,
@@ -34,9 +31,6 @@ static const struct option long_options[] = {
     { "run"           , required_argument , 0 , OPT_run           } ,
     { "strength"      , required_argument , 0 , OPT_strength      } ,
     { "time"          , required_argument , 0 , OPT_time          } ,
-    { "cacheL1"       , no_argument       , 0 , OPT_cacheL1       } ,
-    { "cacheL2"       , no_argument       , 0 , OPT_cacheL2       } ,
-    { "cacheL3"       , no_argument       , 0 , OPT_cacheL3       } ,
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
@@ -117,10 +111,20 @@ void parse_opts( int argc , char **argv ){
     bench_args_t null_buffer , *pargs = &null_buffer ;
     char infobuf[1024] ;
     while( true ){
+        if( get_arg_flag( global_flag , FLAG_IS_CHECK ) ) break ;
         if( ( c = getopt_long( argc , argv , "?r:n:l::t:s:b:" , long_options , &option_index ) ) == -1 ){
             break ;
         }
         switch( c ){
+            case OPT_limited:{
+                set_arg_flag( pargs->flags , FLAG_IS_LIMITED ) ;
+                if( !optarg ) pargs->limit_round = 100 ;
+                else {
+                    int32_t i32 = atoi( optarg ) ;
+                    pargs->limit_round = i32 ;
+                }
+                break ;
+            }
             case OPT_ninstance:{
                 int32_t i32 = atoi( optarg ) ;
                 if( i32 < 1 || i32 > cpuinfo.online_count ){
@@ -138,6 +142,8 @@ void parse_opts( int argc , char **argv ){
                 if( bench_funcs.count( bench_name ) ) {
                     bench_tasks.emplace_back( (*bench_funcs.find( bench_name )).second , *(new bench_args_t()) ) ;
                     pargs = &( *bench_tasks.rbegin() ).args ;
+                    pargs->bench_name = bench_name ;
+                    // cache size level setting
                     if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
                     } else if( !strncasecmp( optarg , "cacheL2" , 7 ) ){
@@ -167,24 +173,32 @@ void parse_opts( int argc , char **argv ){
                 break ;
             }
             // long options :
-            case OPT_cacheL1:{
-                pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
-                break ;
-            }
-            case OPT_cacheL2:{
-                pargs->cache_size = cpuinfo.get_data_cache_size_level( 2 ) ;
-                break ;
-            }
-            case OPT_cacheL3:{
-                pargs->cache_size = cpuinfo.get_data_cache_size_level( 3 ) ;
-                break ;
-            }
             case OPT_cache_size :{
                 uint32_t cache_size = atoi( optarg ) ;
                 pargs->cache_size = cache_size ;
                 break ;
             }
             case OPT_check :{
+                set_arg_flag( global_flag , FLAG_IS_CHECK ) ;
+                set_arg_flag( global_flag , FLAG_IS_LIMITED ) ;
+                // cacheL1 speed
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL1" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "cacheL1" ) ;
+                pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
+                pargs->limit_round = ONE_HUNDRED * 5 ;
+                // cacheL2 speed
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL2" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "cacheL2" ) ;
+                pargs->cache_size = cpuinfo.get_data_cache_size_level( 2 ) ;
+                pargs->limit_round = ONE_HUNDRED * 5 ;
+                // cacheL3 speed
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL3" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "cacheL3" ) ;
+                pargs->cache_size = cpuinfo.get_data_cache_size_level( 3 ) ;
+                pargs->limit_round = ONE_HUNDRED * 5 ;
                 break ;
             }
             case OPT_debug :{
@@ -206,7 +220,7 @@ void parse_opts( int argc , char **argv ){
             }
         }
     }
-    for( auto task : bench_tasks ){
+    for( auto &task : bench_tasks ){
         task.args.flags |= global_flag ;
     }
 }
@@ -217,7 +231,8 @@ int main( int argc , char **argv , char **envp ){
 
     parse_opts( argc , argv ) ; 
 
-    if( get_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO) ){
+    if( get_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ||
+        get_arg_flag( global_flag , FLAG_IS_CHECK ) ){
         mwc_t rndeng ;
         rndeng.print_info() ;
         cpuinfo.print_cpuinfo() ;

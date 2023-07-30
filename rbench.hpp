@@ -50,6 +50,7 @@ struct help_info_t{
 // arguments passed to every benchmarks
 // unified interface
 struct bench_args_t{
+    string bench_name ;
     uint32_t threads ;
     uint32_t limit_round ;
     uint32_t time ;
@@ -79,6 +80,7 @@ extern uint32_t global_flag ;
 enum argflag_t{
     FLAG_PRINT_DEBUG_INFO = 0 ,
     FLAG_IS_LIMITED ,
+    FLAG_IS_CHECK ,
     FLAG_COUNT ,
 } ;
 void clr_arg_flag( uint32_t& , argflag_t ) ;
@@ -97,9 +99,6 @@ enum argvopt_t{
     OPT_time           = 't' ,
     // long options only
     OPT_long_ops_start = 0x7f ,
-    OPT_cacheL1 ,
-    OPT_cacheL2 ,
-    OPT_cacheL3 ,
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
@@ -197,6 +196,7 @@ struct mwc_t {
 #define ONE_BILLION        (1.0E9)
 #define ONE_MILLION        (1.0E6)
 #define ONE_THOUSAND       (1.0E3)
+#define ONE_HUNDRED        (1.0E2)
 #define ONE_BILLIONTH     (1.0E-9)
 #define ONE_MILLIONTH     (1.0E-6)
 #define ONE_THOUSANDTH    (1.0E-3)

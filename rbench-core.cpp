@@ -132,18 +132,19 @@ void cpuinfo_t::read_cpuinfo(){
 }
 
 void bench_args_t::print_argsinfo() {
-    printf( "threads = %u, strength = %u%%, period = %uus\n" , threads , strength , period ) ;
+    printf( "%s\n%-4sthreads = %u, strength = %u%%, period = %uus\n" , 
+            bench_name.c_str() , "" , threads , strength , period ) ;
     if( get_arg_flag( flags , FLAG_IS_LIMITED ) ){
-        printf( "limited , rounds = %d\n" , limit_round ) ;
+        printf( "%-4slimited , rounds = %d, " , "" , limit_round ) ;
     } else{
-        printf( "rounds unlimited\n" ) ;
+        printf( "%-4srounds unlimited, " , "" ) ;
     }
     if( time != 0 ){
-        printf( "time limit = %ds\n" , time ) ;
+        printf( "time limit = %ds, " , time ) ;
     } else {
-        printf( "time unlimited\n" ) ;
+        printf( "time unlimited, " ) ;
     }
-    printf( "size/bw = %llu\n" , (unsigned long long) cache_size ) ;
+    printf( "size(bw) = %llu\n" , (unsigned long long) cache_size ) ;
 }
 
 uint64_t cpuinfo_t::get_data_cache_size_level( uint32_t lev ){

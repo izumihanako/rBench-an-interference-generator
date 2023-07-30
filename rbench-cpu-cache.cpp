@@ -135,7 +135,7 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
             sum_sleepus -= ( sum_sleepus ) / 5 , sum_runidleus -= ( sum_runidleus ) / 5 ;
         }
     }
-    sprintf( infobuf , "cache bench( thread %d ): stopped after %.1f seconds" , thrid , time_now() - t_start ) ;
+    sprintf( infobuf , "cache bench( thread %d ): stopped after %.1f seconds, %d rounds" , thrid , time_now() - t_start , round_cnt ) ;
     pr_info( infobuf ) ;
     // Deallocate the memory buffer
     munmap( (void*)block , cache_size << 1 ) ;
@@ -143,6 +143,9 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
 
 int32_t cache_bench_entry( bench_args_t args ){
     int count_thr = args.threads ;
+    if( get_arg_flag( args.flags , FLAG_IS_CHECK ) ){
+        args.print_argsinfo() ;
+    }
     // get cache line size
     uint32_t cache_line_size = UNIVERSAL_CACHELINE ;
     for( int i = 0 ; i < cpuinfo.cache_count ; i ++ ){
