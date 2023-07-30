@@ -73,19 +73,11 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
            run_idlet = md_t_end - md_t_start - actl_runt , sgl_idle = run_idlet / measure_rounds ;
-    
-    sprintf( infobuf , "cache bench( thread %d ): %d times kernel running takes %.6fs, average is %.6fs" , 
-        thrid , measure_rounds , actl_runt , sgl_time ) ;
-    pr_debug( infobuf ) ;
-    
     int32_t module_runrounds , module_sleepus ;
     strength_to_time( sgl_time , sgl_idle , args.strength , args.period , module_runrounds , module_sleepus ) ;
 
-    sprintf( infobuf , "cache bench( thread %d ): strength=%d , (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
-        thrid , args.strength , module_runrounds * sgl_time * ONE_MILLION , (double)module_sleepus , module_runrounds * sgl_idle * ONE_MILLION ) ;
-    pr_debug( infobuf ) ;
-
     // Run stressor
+    bool in_low_actl_strength_warning = false ;
     int32_t round_cnt = 0 , time_limit = args.time , low_actl_strength_warning = 0 , 
             round_limit = get_arg_flag( args.flags , FLAG_IS_LIMITED ) ? args.limit_round : INT32_MAX ;
     double t_start = time_now() , sum_krounds = 0 , sum_sleepus = 0 , sum_runtimeus = 0 , sum_runidleus = 0 ;
@@ -107,9 +99,6 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
         md_t_end = time_now() ;
         double actl_sleepus = ( md_t_end - md_t_start ) * ONE_MILLION ;
         sum_sleepus += actl_sleepus ;
-        sprintf( infobuf , "cache bench( thread %d ): (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
-            thrid , actl_runt * ONE_MILLION, actl_sleepus , run_idlet * ONE_MILLION ) ;
-        pr_debug( infobuf ) ;
 
         if( round_cnt + 1 > round_limit ) break ;
         if( time_limit && md_t_end - t_start > time_limit ) break ;
@@ -125,17 +114,25 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
             if( args.strength - 0.5 > actual_strength || actual_strength > args.strength + 0.5 ){
                 strength_to_time( sgl_time , sgl_idle , args.strength , args.period , module_runrounds , module_sleepus ) ;
             }
-            if( args.strength - 0.5 > actual_strength ){
-                low_actl_strength_warning += 0x8 ;
-                if( low_actl_strength_warning > 0x20 ){
-                    sprintf( infobuf , "LOW STRENGTH - cache bench( thread %d ): strength adjustment failed, current %.1f, target %.1f" , 
+            if( args.strength - 1 > actual_strength ){
+                if( ++low_actl_strength_warning > 8 ){
+                    sprintf( infobuf , "LOW STRENGTH - cache bench( thread %d ): current %.1f%%, target %.1f%%, adjusting..." , 
                         thrid , actual_strength , (double)args.strength ) ;
                     pr_warning( infobuf ) ;
+                    in_low_actl_strength_warning = true ;
                     low_actl_strength_warning = 0 ;
                 }
+            } else {
+                if( in_low_actl_strength_warning ){
+                    sprintf( infobuf , "LOW STRENGTH - cache bench( thread %d ): adjustment succeed, current %.1f%%, target %.1f%%" , 
+                        thrid , actual_strength , (double)args.strength ) ;
+                    pr_warning( infobuf ) ;
+                }
+                in_low_actl_strength_warning = false ;
+                low_actl_strength_warning = 0 ;
             }
-            sum_runtimeus -= ( sum_runtimeus ) / 8 , sum_krounds -= ( sum_krounds ) / 8 ;
-            sum_sleepus -= ( sum_sleepus ) / 8 , sum_runidleus -= ( sum_runidleus ) / 8 ;
+            sum_runtimeus -= ( sum_runtimeus ) / 5 , sum_krounds -= ( sum_krounds ) / 5 ;
+            sum_sleepus -= ( sum_sleepus ) / 5 , sum_runidleus -= ( sum_runidleus ) / 5 ;
         }
     }
     sprintf( infobuf , "cache bench( thread %d ): stopped after %.1f seconds" , thrid , time_now() - t_start ) ;
@@ -146,10 +143,6 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
 
 int32_t cache_bench_entry( bench_args_t args ){
     int count_thr = args.threads ;
-    pr_debug( string( "cache_bench_entry function, the args are:" ) ) ;
-    if( get_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ){
-        args.print_argsinfo() ;
-    }
     // get cache line size
     uint32_t cache_line_size = UNIVERSAL_CACHELINE ;
     for( int i = 0 ; i < cpuinfo.cache_count ; i ++ ){

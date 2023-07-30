@@ -194,6 +194,9 @@ void strength_to_time( const double sgl_round_time , const double sgl_idle_time 
         double p = strength_ / 100.0 ;
         double y = ( 1 - p ) * period ; // let y = ( 1 - p ) * period
         double x = y * p / ( ( sgl_round_time - p * sgl_round_time - p * sgl_idle_time ) * ONE_MILLION ) ;
+        double x_time = x * ( sgl_round_time + sgl_idle_time ) * ONE_MILLION ;
+        double ratio = period / ( x_time + y ) ;
+        y *= ratio , x *= ratio ;
         if( x < 0 || isnan( x ) ){
             x = 100 , y = 0 ;
         }
