@@ -3,14 +3,14 @@ VERSION=0.0.1
 KERNEL=$(shell uname -s)
 NODENAME=$(shell uname -n)
 
-CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11 -g
+CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11
 LD = g++
 LDLIBS = -pthread
 CC = g++
 
 # Default -O2 if optimization level not defined
 ifeq "$(findstring -O,$(CFLAGS))" ""
-	CFLAGS += -O2
+	CFLAGS += -O1
 endif
 
 # Header files

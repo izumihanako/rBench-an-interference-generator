@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 using std::pair ;
 using std::make_pair ;
 using std::mutex ;
@@ -34,7 +35,9 @@ using std::string ;
 using std::shared_ptr ;
 
 extern double timeval_to_double(const struct timeval *tv) ;
-extern double time_now(void) ;
+extern double time_now() ;
+//return thread cpu time
+extern double thread_time_now() ; // (since Linux 2.6.26)
 
 // used For help message output
 struct help_info_t{
@@ -239,9 +242,11 @@ T alias_cast(F raw_data){
 }
 
 // strength run time calculator 
-// params: ( sgl_time , strength , period , module_runrounds , module_sleepus )
-void strength_to_time( const double  , const uint32_t , const uint32_t , 
-                       int32_t& , int32_t& ) ;
+// params: ( sgl_time , sgl_idle , strength , period , module_runrounds , module_sleepus )
+void strength_to_time( const double , const double , const uint32_t , 
+                       const uint32_t , int32_t& , int32_t& ) ;
+// useless
+// void try_precise_usleep( int32_t sleepus ) ;
 
 // benchmark entry function 
 int32_t cache_bench_entry( bench_args_t ) ;

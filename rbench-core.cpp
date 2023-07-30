@@ -6,9 +6,17 @@ double OPTIMIZE3 timeval_to_double( const struct timeval *tv ) {
 
 double OPTIMIZE3 time_now() {
     timeval now;
-    if ( gettimeofday( &now, NULL ) < 0 )
+    if ( gettimeofday( &now, NULL ) < 0 ){
         return -1.0 ;
+    }
     return timeval_to_double( &now ) ;
+}
+
+double OPTIMIZE3 thread_time_now(){
+    struct rusage rusageinfo ;
+    getrusage( RUSAGE_THREAD , &rusageinfo ) ; // (since Linux 2.6.26)
+    return timeval_to_double( &(rusageinfo.ru_utime ) ) ;
+        //    timeval_to_double( &(rusageinfo.ru_stime ) ) ;
 }
 
 void set_arg_flag( uint32_t& flags , argflag_t id ){
@@ -171,25 +179,47 @@ void cpuinfo_t::print_cpuinfo() {
     }
 }
 
-void strength_to_time( const double sgl_round_time , const uint32_t strength_ , const uint32_t period , 
-                       int32_t& module_runround , int32_t &module_sleepus ){
+void strength_to_time( const double sgl_round_time , const double sgl_idle_time , const uint32_t strength_ , 
+                       const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
     if( strength_ == 100 ){
-        module_runround = 1000 ;
+        module_runround = 100 ;
         module_sleepus = 0 ;
     } else {
-        // ax/(ax+by) = p 
-        // ax = apx + bpy 
-        // a(1-p)x = bpy 
-        // ax = byp/(1-p)
-        double strength = strength_ / 100.0 ;
-        double module_sleep_percent = 1 ; // let y = 1, and we know b = 1us  
-        double module_running_percent = module_sleep_percent * strength / ( 1 - strength ) ;
-        double module_tot_percent = module_running_percent + module_sleep_percent ;
-        module_sleepus = (int32_t)round( module_sleep_percent / module_tot_percent * period ) ;
-        module_runround = (int32_t)ceil( module_running_percent / module_tot_percent * period * ONE_MILLIONTH / sgl_round_time ) ;
+        // a = sgl_round_time , b = sgl_idle_time , p = strength
+        // x = module_runround , y = module_sleepus 
+        // ax/(ax+bx+y) = p 
+        // ax = pax + pbx + py
+        // x( a-pa-pb ) = py
+        // x = p/(a-pa-pb) y
+        double p = strength_ / 100.0 ;
+        double y = ( 1 - p ) * period ; // let y = ( 1 - p ) * period
+        double x = y * p / ( ( sgl_round_time - p * sgl_round_time - p * sgl_idle_time ) * ONE_MILLION ) ;
+        if( x < 0 || isnan( x ) ){
+            x = 100 , y = 0 ;
+        }
+        module_sleepus = (int32_t)round( y ) ;
+        module_runround = (int32_t)round( x ) ;
     }
     return ;
 }
+
+// void try_precise_usleep( int32_t sleepus ){
+//     double start_time = time_now() ;
+//     int32_t span , nxtsleep = sleepus / 100 , std100 = nxtsleep ;
+//     for( int i = 1 ; i <= 100 ; i ++ ){
+//         if( nxtsleep )
+//             usleep( nxtsleep ) ;
+//         span = (int)( ( time_now() - start_time ) * ONE_MILLION ) ;
+//         if( span > i * std100 ){
+//             if( i != 100 )
+//                 nxtsleep = std::max( std100 - ( span - i * std100 ) , 0 ) ;
+//             else 
+//                 nxtsleep = std::max( sleepus - span , 0 ) ;
+//         } else nxtsleep = std100 ;
+//         if( span > sleepus ) break ;
+//     }
+// }
+
 
 void pr_info( string info ){
     global_pr_mtx.lock() ;

@@ -2,10 +2,10 @@
 // https://ieeexplore.ieee.org/document/7851476
 #include "rbench.hpp"
 
-void HOT OPTIMIZE3 cache_bench_rdacc_kernel( volatile char* block_aligned_ , uint32_t cache_size , mwc_t &mwc_eng ){
+void OPTIMIZE3 cache_bench_rdacc_kernel( volatile char* block_aligned_ , uint32_t cache_size , mwc_t &mwc_eng ){
     register volatile char* block_aligned = block_aligned_ ;
     #define OP_LIMIT 20000 
-    register uint32_t count = 0 ;
+    uint32_t count = 0 ;
     while( 1 ){
         if( UNLIKELY( count > OP_LIMIT ) ) break ;
         block_aligned[mwc_eng.mwc32modn_maybe_pwr2(cache_size)] ++ ;
@@ -34,7 +34,7 @@ void HOT OPTIMIZE3 cache_bench_rdacc_kernel( volatile char* block_aligned_ , uin
         count += 20 ;
     }
     #undef OP_LIMIT 
-    // printf( "res[0] = %d\n" , block_aligned[0] ) ;
+//    block_aligned[0] += block_aligned[20] ;
 }
 
 void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache_line_size ){
@@ -65,65 +65,80 @@ void cache_bench_rand_access( int32_t thrid , bench_args_t args , uint32_t cache
 
     // Calculate load parameters 
     mwc_t random_mwc_eng ;
-    double time_start = time_now() ;
+    double md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
     int measure_rounds = std::min( std::max( int( 1000000000ll / cache_size ) , 500 ) , 5000 ) ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
         cache_bench_rdacc_kernel( block_aligned , cache_size , random_mwc_eng ) ;
     }
-    double time_span = time_now() - time_start , stressor_span = time_span , sgl_time = time_span / measure_rounds ;
+    double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
+    double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
+           run_idlet = md_t_end - md_t_start - actl_runt , sgl_idle = run_idlet / measure_rounds ;
     
     sprintf( infobuf , "cache bench( thread %d ): %d times kernel running takes %.6fs, average is %.6fs" , 
-        thrid , measure_rounds , time_span , sgl_time ) ;
+        thrid , measure_rounds , actl_runt , sgl_time ) ;
     pr_debug( infobuf ) ;
     
     int32_t module_runrounds , module_sleepus ;
-    strength_to_time( sgl_time , args.strength , args.period , module_runrounds , module_sleepus ) ;
+    strength_to_time( sgl_time , sgl_idle , args.strength , args.period , module_runrounds , module_sleepus ) ;
 
-    sprintf( infobuf , "cache bench( thread %d ): strength=%d period=%dus , (runtime=%.1fus , sleeptime=%.1fus)" , 
-        thrid , args.strength , args.period , module_runrounds * sgl_time * ONE_MILLION , (double)module_sleepus ) ;
+    sprintf( infobuf , "cache bench( thread %d ): strength=%d , (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
+        thrid , args.strength , module_runrounds * sgl_time * ONE_MILLION , (double)module_sleepus , module_runrounds * sgl_idle * ONE_MILLION ) ;
     pr_debug( infobuf ) ;
 
     // Run stressor
-    double stress_start_time = time_now() , sum_rounds = 0 ;
-    int32_t round_cnt = 0 , time_limit = args.time , 
+    int32_t round_cnt = 0 , time_limit = args.time , low_actl_strength_warning = 0 , 
             round_limit = get_arg_flag( args.flags , FLAG_IS_LIMITED ) ? args.limit_round : INT32_MAX ;
-    time_start = stress_start_time ;
+    double t_start = time_now() , sum_krounds = 0 , sum_sleepus = 0 , sum_runtimeus = 0 , sum_runidleus = 0 ;
     while( true ){
         round_cnt ++ ;
+
         measure_rounds = module_runrounds ;
-        for( int i = 0 ; i < module_runrounds ; i ++ ){
+        md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
+        for( int i = 0 ; i < measure_rounds ; i ++ ){
             cache_bench_rdacc_kernel( block_aligned , cache_size , random_mwc_eng ) ;
         }
-        usleep( module_sleepus ) ;
-        sum_rounds ++ ;
-        if( round_cnt + 1 > round_limit ){
-            break ;
-        }
-        double tmp_nowtime = time_now() ;
-        if( time_limit && tmp_nowtime - stress_start_time > time_limit )
-            break ;
+        md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
+        actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
+        sum_runtimeus += actl_runt * ONE_MILLION , sum_runidleus += run_idlet * ONE_MILLION ;
+        sum_krounds += measure_rounds ;
+
+        md_t_start = time_now() ;
+        std::this_thread::sleep_for (std::chrono::microseconds( module_sleepus ) );
+        md_t_end = time_now() ;
+        double actl_sleepus = ( md_t_end - md_t_start ) * ONE_MILLION ;
+        sum_sleepus += actl_sleepus ;
+        sprintf( infobuf , "cache bench( thread %d ): (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
+            thrid , actl_runt * ONE_MILLION, actl_sleepus , run_idlet * ONE_MILLION ) ;
+        pr_debug( infobuf ) ;
+
+        if( round_cnt + 1 > round_limit ) break ;
+        if( time_limit && md_t_end - t_start > time_limit ) break ;
 
         // Load strength feedback regulation
-        if( ( round_cnt & (0x10) ) == 0x10 ){
-            time_span = tmp_nowtime - time_start ;
-            stressor_span = time_span - sum_rounds * module_sleepus * ONE_MILLIONTH ;
-            sgl_time = stressor_span / sum_rounds / module_runrounds ;
-            double actual_strength = 100 * stressor_span / time_span ;
+        if( !( round_cnt & 0x7 ) ){
+            sgl_time = sum_runtimeus * ONE_MILLIONTH / sum_krounds , sgl_idle = sum_runidleus * ONE_MILLIONTH / sum_krounds ;
+            double actual_strength = 100 * sum_runtimeus / ( sum_runtimeus + sum_sleepus + sum_runidleus ) ;
+            sprintf( infobuf , "cache bench( thread %d ): sgl_time = %.1fus, strength=%.1f, (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
+                thrid , sgl_time * ONE_MILLION , actual_strength , sum_runtimeus, sum_sleepus , sum_runidleus ) ;
+            pr_debug( infobuf ) ;
             // re-calculate load parameters
-            if( args.strength - 1 > actual_strength || actual_strength > args.strength + 1 ){
-                sprintf( infobuf , "cache bench( thread %d ): before- sgl_time=%.1fus , (runtime=%.1fus , sleeptime=%.1fus)" , 
-                    thrid , sgl_time * ONE_MILLION , stressor_span * ONE_MILLION , (double)module_sleepus ) ;
-                pr_debug( infobuf ) ;
-                strength_to_time( sgl_time , args.strength , args.period , module_runrounds , module_sleepus ) ;
-                sprintf( infobuf , "cache bench( thread %d ): after- strength=%d period=%dus , (exptime=%.1fus , sleeptime=%.1fus)" , 
-                    thrid , args.strength , args.period , 1.0 * module_runrounds * sgl_time * ONE_MILLION , (double)module_sleepus ) ;
-                pr_debug( infobuf ) ;
+            if( args.strength - 0.5 > actual_strength || actual_strength > args.strength + 0.5 ){
+                strength_to_time( sgl_time , sgl_idle , args.strength , args.period , module_runrounds , module_sleepus ) ;
             }
-            time_start += ( tmp_nowtime - time_start ) / 2 ; 
-            sum_rounds /= 2 ;
+            if( args.strength - 0.5 > actual_strength ){
+                low_actl_strength_warning += 0x8 ;
+                if( low_actl_strength_warning > 0x20 ){
+                    sprintf( infobuf , "LOW STRENGTH - cache bench( thread %d ): strength adjustment failed, current %.1f, target %.1f" , 
+                        thrid , actual_strength , (double)args.strength ) ;
+                    pr_warning( infobuf ) ;
+                    low_actl_strength_warning = 0 ;
+                }
+            }
+            sum_runtimeus -= ( sum_runtimeus ) / 8 , sum_krounds -= ( sum_krounds ) / 8 ;
+            sum_sleepus -= ( sum_sleepus ) / 8 , sum_runidleus -= ( sum_runidleus ) / 8 ;
         }
     }
-    sprintf( infobuf , "cache bench( thread %d ): stopped after %.1f seconds" , thrid , time_now() - stress_start_time ) ;
+    sprintf( infobuf , "cache bench( thread %d ): stopped after %.1f seconds" , thrid , time_now() - t_start ) ;
     pr_info( infobuf ) ;
     // Deallocate the memory buffer
     munmap( (void*)block , cache_size << 1 ) ;
@@ -171,13 +186,12 @@ perf stat -B -r 5 \
 
 Hardware cache event perf:
 
-perf stat -B -r 5 \
-          -o bubblecache_Data/stream_access_57671680.txt \
+perf stat -B -I 10000 \
           -e cycles -e instructions \
           -e L1-icache-loads -e L1-icache-load-misses \
           -e L1-dcache-loads -e L1-dcache-load-misses \
           -e l2_rqsts.references -e l2_rqsts.miss \
           -e LLC-loads -e LLC-load-misses \
           -e LLC-stores -e LLC-store-misses \
-          commands...
+          -p 1676661
 */
