@@ -9,18 +9,18 @@ int32_t glob_thr_cnt ;
 
 // help options
 static const help_info_t help_entrys[] = {
-    { NULL           , "cache-size N"   , NULL         , "(stressor) specify the size of the cache buffer of the cache stressor as N" } ,
-    { NULL           , "check"          , NULL         , "(global) run preset system check tasks. If this option is present, all other options will be ignored" } ,
-    { NULL           , "debug"          , NULL         , "(global) output debug information" } ,
-    { "l N"          , "limited N"      , NULL         , "(stressor) if limited, benchmark will stop after N rounds instead of running forever" } ,
-    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) for memBw stressor, stress mem bw for W MB/s" },
-    { "n N"          , "ninstance N"    , "instance N" , "(stressor) start N instances of benchmark" } ,
-    { NULL           , "parallel"       , NULL         , "(global) run in parallel mode"} ,
+    { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N" } ,
+    { NULL           , "check"          , NULL         , "(global) Run preset system check tasks. If this option is present, all other options will be ignored" } ,
+    { NULL           , "debug"          , NULL         , "(global) Output debug information" } ,
+    { "l"            , "limited=N"      , NULL         , "(stressor) If limited, benchmark will stop after N rounds. Must have \"=\" !!!" } ,
+    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For memBw stressor, stress mem bw for W MB/s" },
+    { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of benchmark" } ,
+    { NULL           , "parallel"       , NULL         , "(global) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
-    { "r NAME"       , "run NAME"       , NULL         , "(stressor) run the specified benchmark. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, "    } ,
-    { "s P"          , "strength N"     , NULL         , "(stressor) set load strength to P% for every instance (run P% time per time granularity)" } ,
-    { "t N"          , "time N"         , NULL         , "(stressor) if specified, benchmark will stop after N seconds instead of running forever" } ,
+    { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified benchmark. Supported test items are cacheL1, cacheL2, "
+                                                         "cacheL3, cache, cpu-int, cpu-float, "    } ,
+    { "s P"          , "strength N"     , NULL         , "(stressor) Set load strength to P% for every instance (run P% time per time granularity)" } ,
+    { "t N"          , "time N"         , NULL         , "(stressor) If specified, benchmark will stop after N seconds" } ,
     { NULL           , NULL             , NULL         , NULL }
 } ;
 
@@ -48,6 +48,7 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cacheL2" , &cache_bench_entry ) ,
     pair< string , bench_func_t >( "cacheL3" , &cache_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
+    pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
 } ;
 
 struct bench_task_t{
@@ -198,6 +199,11 @@ void parse_opts( int argc , char **argv ){
                 bench_tasks.emplace_back(  (*bench_funcs.find( string( "cpu-int" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-int" ) ;
+                pargs->limit_round = ONE_THOUSAND * 20 ;
+                // float speed
+                bench_tasks.emplace_back(  (*bench_funcs.find( string( "cpu-float" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "cpu-float" ) ;
                 pargs->limit_round = ONE_THOUSAND * 20 ;
                 // cacheL1 speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL1" ) ) ).second , *(new bench_args_t()) ) ;

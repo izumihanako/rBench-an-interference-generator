@@ -258,6 +258,7 @@ void strength_to_time( const double , const double , const uint32_t ,
 // benchmark entry function 
 int32_t cache_bench_entry( bench_args_t ) ;
 int32_t cpu_int_bench_entry( bench_args_t ) ;
+int32_t cpu_float_bench_entry( bench_args_t ) ;
 
 
 // mutex print 
@@ -271,5 +272,15 @@ void pr_info( char* ) ;
 void pr_debug( string ) ;
 void pr_debug( char* ) ;
 void pr_debug( void(* prfunc )() ) ;
+
+// float is zero
+template<typename T>
+int f_is_zero( T x ) {
+    if( typeid( x ) == typeid( float ) ){
+        return fabs( x ) < 1e-5 ;
+    } else {
+        return fabs( x ) < 1e-9 ;
+    }
+}
 
 #endif 

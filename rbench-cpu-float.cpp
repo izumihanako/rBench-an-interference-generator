@@ -2,98 +2,82 @@
 // https://github.com/ColinIanKing/stress-ng/blob/master/stress-cpu.c#L759
 #include "rbench.hpp"
 
-#define C1 	(0xf0f0f0f0f0f0f0f0ULL)
-#define C2	(0x1000100010001000ULL)
-#define C3	(0xffeffffefebefffeULL)
-#define CAST_TO_UINT128(hi, lo)   ((((__uint128_t)hi << 64) | (__uint128_t)lo))
+#define float_thresh(x, _type)	x = (_type)		\
+	((fabs((double)x) > 1.0) ?	\
+	((_type)(0.1 + (double)x - (double)(long)x)) :	\
+	((_type)(x)))
 
-template<typename T, typename C>
-static void int_ops_ikernel( T _a , T _b , C _c1 , C _c2 , C _c3 ){
-    const T mask = (T)~(T)0 ;
-    const T a_final = _a ;
-    const T b_final = _b ;
-    const T c1 = _c1 & mask , c2 = _c2 & mask , c3 = _c3 & mask ;
-    register T a , b ;
+template<typename T, typename Func>
+static void float_ops_ikernel( T r_final , Func _sin , Func _cos ){
     mwc_t mwc_eng ;
     mwc_eng.set_default_seed() ;
-    a = (T) mwc_eng.mwc32() , b = (T) mwc_eng.mwc32() ;
+    const uint32_t r1 = mwc_eng.mwc32() ;
+    const uint32_t r2 = mwc_eng.mwc32() ;
 
+    T register a = (T) 0.18728L ,
+               b = (T) ( (double)r1 / 65536.0 ) ,
+               c = (T) ( (double)r2 / 65536.0 ) ,
+               d = (T) 0.0 , r ;
     for( int i = 0 ; i < 1000 ; i ++ ){
         do{
-            a = (T)(a + b) ;
-            b = (T)(b ^ a) ;
-            a = (T)(a >> 1) ;
-            b = (T)(b << 2) ;
-            b = (T)(b - a) ;
-            a ^= (T)~(T)0 ;
-            b = (T)(b ^ (~(c1)) ) ;
-            a = (T)(a * 3) ;
-            b = (T)(b * 7) ;
-            a = (T)(a + 2) ;
-            b = (T)(b - 3) ;
-            a /= 77 ;
-            b /= 3 ;
-            a = (T)(a << 1) ;
-            b = (T)(b << 2) ;
-            a |= 1 ;
-            b |= 3 ;
-            a = (T)( a * mwc_eng.mwc32() ) ;
-            b = (T)( b ^ mwc_eng.mwc32() ) ;
-            a = (T)( a + mwc_eng.mwc32() ) ;
-            b = (T)( b - mwc_eng.mwc32() ) ;
-            a /= 7 ;
-            b /= 9 ;
-            a |= (c2) ;
-            b &= (c3) ;
+            a = a + b ;
+            d = a * c ;
+            b = a * c ;
+            c = a - b ;
+            d = a / (T)8.1 ;
+            float_thresh( d , T ) ;
+            a = c / (T)5.1923 ;
+            float_thresh( a , T ) ;
+            float_thresh( c , T ) ;
+            b = c + a ;
+            c = b * (T)_sin(b) ;
+            d = d + b + (T)_sin(a) ;
+            a = (T)_cos( (double)( b + c ) ) ;
+            b = b * c ; 
+            c = c + (T)1.5 ;
+            d = d - (T)_sin(c) ;
+            a = a * (T)_cos(b) ;
+            b = b + (T)_cos(c) ;
+            c = (T)_sin( a + b ) / (T)2.344 ;
+            b = d - (T)0.5 ;
         } while( 0 ) ;
-    }
+    } 
 
+    r = a + b + c + d ;
     // Calculate verification answer
     if( false ){ // Calculate before compilation
-        std::stringstream ss ;
-        string sa , sb ;
-        if( typeid( a ) == typeid( CAST_TO_UINT128(0,0) ) ){
-            ss << (uint64_t)(a>>64) , ss >> sa ; ss.clear() ;
-            ss << (uint64_t)(b>>64) , ss >> sb ; ss.clear() ;
-            printf( "a = %s , b = %s\n" , sa.c_str() , sb.c_str() ) ;
-            sa.clear() , sb.clear() ;
-            ss << (uint64_t)(a&0xffffffffffffffff) , ss >> sa ; ss.clear() ;
-            ss << (uint64_t)(b&0xffffffffffffffff) , ss >> sb ; ss.clear() ;
-            printf( "a = %s , b = %s\n" , sa.c_str() , sb.c_str() ) ;
-        } else {
-            ss << (uint64_t)a , ss >> sa ; ss.clear() ;
-            ss << (uint64_t)b , ss >> sb ; ss.clear() ;
-            printf( "a = %s , b = %s\n" , sa.c_str() , sb.c_str() ) ;
-        }
+        std::stringstream ss ; ss.precision( 15 ) ;
+        string sr ;
+        ss << (double)r , ss >> sr ; ss.clear() ;
+        printf( "%s: r = %s \n" , typeid( T ).name() , sr.c_str() ) ;
     }
 
     // verify
-    if( a != a_final || b != b_final ){
-        pr_error( string( "error decected @ cpu-int-kernel, failed " ) + 
-                  string( typeid( a ).name() ) + string( " math operations" ) ) ;
+    if( !f_is_zero( r - r_final ) ){
+        pr_error( string( "error decected @ cpu-float-kernel, failed " ) + 
+                  string( typeid( T ).name() ) + string( " math operations" ) ) ;
         exit( 0 ) ;
     }
 }
 
-static void int_ops_kernel(){
-    int_ops_ikernel<__uint128_t>( 
-        CAST_TO_UINT128(0x132AF604D8B9183A,0x5E3AF8FA7A663D74) , 
-        CAST_TO_UINT128(0x62F086E6160E4E  ,0xD84C9F800365858 ) , 
-        CAST_TO_UINT128(C1,C1) , CAST_TO_UINT128(C2,C2) , CAST_TO_UINT128(C3,C3) ) ;
-    int_ops_ikernel<uint64_t>( 0x13F7F6DC1D79197CULL , 0x1863D2C6969A51CEULL , C1 , C2 , C3 ) ;
-    int_ops_ikernel<uint32_t>( 0x1CE9B547UL , 0xA24B33AUL , C1 , C2 , C3 ) ;
-    int_ops_ikernel<uint16_t>( 0x1871 , 0x07F0 , C1 , C2 , C3 ) ;
-    int_ops_ikernel<uint8_t> ( 0x12 , 0x1A , C1 , C2 , C3 ) ;
+static void float_ops_kernel(){
+// #if (_GLIBCXX_USE_FLOAT128)
+//         float_ops_ikernel<__float128>( 0 , __builtin_sin , __builtin_cos ) ;
+// #endif
+    float_ops_ikernel<__long_double_t>( -2.0687397322345 , __builtin_sin , __builtin_cos ) ;
+    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
+    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
+    float_ops_ikernel<float_t>( (float)-2.88806390762329 , __builtin_sin , __builtin_cos ) ;
 }
 
-void cpu_int_bench( int32_t thrid , bench_args_t args ){
+void cpu_float_bench( int32_t thrid , bench_args_t args ){
     char infobuf[1024] ;
 
     // Calculate load parameters 
     double md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
     int measure_rounds = 5000 ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
-        int_ops_kernel() ;
+        float_ops_kernel() ;
     }
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
@@ -113,7 +97,7 @@ void cpu_int_bench( int32_t thrid , bench_args_t args ){
         measure_rounds = module_runrounds ;
         md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
         for( int i = 0 ; i < measure_rounds ; i ++ ){
-            int_ops_kernel() ;
+            float_ops_kernel() ;
         }
         md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
         actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
@@ -168,7 +152,7 @@ void cpu_int_bench( int32_t thrid , bench_args_t args ){
     pr_info( infobuf ) ;
 }
 
-int32_t cpu_int_bench_entry( bench_args_t args ){
+int32_t cpu_float_bench_entry( bench_args_t args ){
     int count_thr = args.threads ;
     if( get_arg_flag( args.flags , FLAG_IS_CHECK ) || get_arg_flag( args.flags , FLAG_PRINT_DEBUG_INFO ) ){
         args.print_argsinfo() ;
@@ -177,7 +161,7 @@ int32_t cpu_int_bench_entry( bench_args_t args ){
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
     for( int i = 0 ; i < count_thr ; i ++ ){
-        thrs[i] = thread( cpu_int_bench , i + 1 , args ) ;
+        thrs[i] = thread( cpu_float_bench , i + 1 , args ) ;
     }
     if( get_arg_flag( args.flags , FLAG_IS_RUN_PARALLEL ) ){
         for( auto &thr : thrs ){
@@ -191,7 +175,4 @@ int32_t cpu_int_bench_entry( bench_args_t args ){
     return 0 ;
 }
 
-#undef C1
-#undef C2
-#undef C3
-#undef CAST_TO_UINT128
+#undef float_thresh

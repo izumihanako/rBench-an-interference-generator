@@ -14,100 +14,100 @@ using namespace std ;
 #define BIL12d5 1250000000
 
 void expand8(){
-    register long long x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 , c = 1 , d = 1 ;
+    register double x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 , c = 1 , d = 1 ;
     for( ; x <= BIL12d5 ; ){
-        x ++ ; a ++ ;
-        y ++ ; b ++ ;
-        z ++ ; c ++ ;
-        w ++ ; d ++ ;
+        x += 1.0 ; a += 1.0 ;
+        y += 1.0 ; b += 1.0 ;
+        z += 1.0 ; c += 1.0 ;
+        w += 1.0 ; d += 1.0 ;
     }
     if( x + y + z + w + a + b + c + d == BIL100 + 8 ){
-        printf( "OK\n%lld" , x ) ;
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand7(){
-    register long long x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 , c = 1 ;
+    register double x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 , c = 1 ;
     for( ; x <= BIL14d2 ; ){
-        x ++ ; a ++ ;
-        y ++ ; b ++ ;
-        z ++ ; c ++ ;
-        w ++ ; 
+        x += 1.0 ; a += 1.0 ;
+        y += 1.0 ; b += 1.0 ;
+        z += 1.0 ; c += 1.0 ;
+        w += 1.0 ; 
     }
-    if( x + y + z + w + a + b + c == BIL100 + 3 ){
-        printf( "OK\n%lld" , x ) ;
+    if( fabs( x + y + z + w + a + b + c - BIL100 - 3 ) < 1e-7 ){
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand6(){
-    register long long x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 ;
+    register double x = 1 , y = 1 , z = 1 , w = 1 , a = 1 , b = 1 ;
     for( ; x <= BIL16d6 ; ){
-        x ++ ; a ++ ;
-        y ++ ; b ++ ;
-        z ++ ;
-        w ++ ;
+        x += 1.0 ; a += 1.0 ;
+        y += 1.0 ; b += 1.0 ;
+        z += 1.0 ;
+        w += 1.0 ;
     }
-    if( x + y + z + w + a + b == BIL100 + 2 ){
-        printf( "OK\n%lld" , x ) ;
+    if( fabs( x + y + z + w + a + b - BIL100 - 2 ) < 1e-7 ){
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand5(){
-    register long long x = 1 , y = 1 , z = 1 , w = 1 , a = 1 ;
+    register double x = 1 , y = 1 , z = 1 , w = 1 , a = 1 ;
     for( ; x <= BIL20 ; ){
-        x ++ ; a ++ ;
-        y ++ ;
-        z ++ ;
-        w ++ ;
+        x += 1.0 ; a += 1.0 ;
+        y += 1.0 ;
+        z += 1.0 ;
+        w += 1.0 ;
     }
-    if( x + y + z + w + a == BIL100 + 5 ){
-        printf( "OK\n%lld" , x ) ;
+    if( fabs( x + y + z + w + a - BIL100 - 5 ) < 1e-7 ){
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand4(){
-    register long long x = 1 , y = 1 , z = 1 , w = 1 ;
+    register double x = 1 , y = 1 , z = 1 , w = 1 ;
     for( ; x <= BIL25 ; ){
-        x ++ ;
-        y ++ ;
-        z ++ ;
-        w ++ ;
+        x += 1.0 ;
+        y += 1.0 ;
+        z += 1.0 ;
+        w += 1.0 ;
     }
     if( x + y + z + w == BIL100 + 4 ){
-        printf( "OK\n%lld" , x ) ;
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand3(){
-    register long long x = 1 , y = 1 , z = 1 ;
+    register double x = 1 , y = 1 , z = 1 ;
     for( ; x <= BIL33d3 ; ){
-        x ++ ;
-        y ++ ;
-        z ++ ;
+        x += 1.0 ;
+        y += 1.0 ;
+        z += 1.0 ;
     }
     if( x + y + z == BIL100 + 2 ){
-        printf( "OK\n%lld" , x ) ;
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand2(){
-    register long long x = 1 , y = 1 ;
+    register double x = 1 , y = 1 ;
     for( ; y <= BIL50 ; ){
-        x ++ ;
-        y ++ ;
+        x += 1.0 ;
+        y += 1.0 ;
     }
     if( x + y == BIL100 + 2 ){
-        printf( "OK\n%lld" , x ) ;
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
 void expand1(){
-    register long long x = 1  ;
+    register double x = 1  ;
     for( ; x <= BIL100 ; ){
-        x ++ ;
+        x += 1.0 ;
     }
     if( x == BIL100 + 1 ){
-        printf( "OK\n%lld" , x ) ;
+        printf( "OK\n%.2f" , x ) ;
     } else printf( "ERROR\n" ) ;
 }
 
@@ -154,4 +154,5 @@ int main(){
     printf( "expand8 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
 }
-// g++ validate_cpu_int.cpp -o validate_cpu_int -std=c++11 -O0
+// g+= 1.0 validate_cpu_float.cpp -o validate_cpu_float -std=c+= 1.011 -O0
+// taskset -c 20 ./validate_cpu_float
