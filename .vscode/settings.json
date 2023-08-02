@@ -8,7 +8,10 @@
         "random": "cpp",
         "*.tcc": "cpp",
         "chrono": "cpp",
-        "limits": "cpp"
+        "limits": "cpp",
+        "thread": "cpp",
+        "string": "cpp",
+        "unordered_map": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "C_Cpp.default.compilerPath": "/usr/bin/g++"

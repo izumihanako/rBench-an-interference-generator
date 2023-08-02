@@ -7,6 +7,7 @@
 #include <cstring>
 #include <algorithm>
 #include <cstdint>
+#include <typeinfo>
 #include <vector>
 #include <map>
 #include <ctime>
@@ -51,10 +52,10 @@ struct help_info_t{
 // unified interface
 struct bench_args_t{
     string bench_name ;
-    uint32_t threads ;
-    uint32_t limit_round ;
-    uint32_t time ;
-    uint32_t strength ; // run strength% time per period
+    uint16_t threads ;
+    uint8_t strength ; // run strength% time per period
+    int64_t limit_round ; // kernel round limit
+    int32_t time ;
     uint32_t flags ;
     uint32_t period ; // us 
     union{
@@ -75,12 +76,15 @@ struct bench_args_t{
 } ;
 typedef int32_t(* bench_func_t )( bench_args_t ) ;
 extern uint32_t global_flag ;
+extern vector<thread> glob_threads ;
+extern int32_t glob_thr_cnt ;
 
 // benchmark flag arguments
 enum argflag_t{
     FLAG_PRINT_DEBUG_INFO = 0 ,
     FLAG_IS_LIMITED ,
     FLAG_IS_CHECK ,
+    FLAG_IS_RUN_PARALLEL ,
     FLAG_COUNT ,
 } ;
 void clr_arg_flag( uint32_t& , argflag_t ) ;
@@ -102,6 +106,7 @@ enum argvopt_t{
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
+    OPT_parallel ,
     OPT_period ,
 } ;
 
@@ -243,6 +248,8 @@ T alias_cast(F raw_data){
 
 // strength run time calculator 
 // params: ( sgl_time , sgl_idle , strength , period , module_runrounds , module_sleepus )
+#define STRENGTH_CONTROL_LBOUND 0.5
+#define STRENGTH_CONTROL_RBOUND 0.5
 void strength_to_time( const double , const double , const uint32_t , 
                        const uint32_t , int32_t& , int32_t& ) ;
 // useless
@@ -250,6 +257,7 @@ void strength_to_time( const double , const double , const uint32_t ,
 
 // benchmark entry function 
 int32_t cache_bench_entry( bench_args_t ) ;
+int32_t cpu_int_bench_entry( bench_args_t ) ;
 
 
 // mutex print 

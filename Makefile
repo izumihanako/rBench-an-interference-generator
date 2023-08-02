@@ -21,7 +21,8 @@ HEADERS = \
 SOI_SRC = \
 	rbench.cpp \
 	rbench-core.cpp \
-	rbench-cpu-cache.cpp 
+	rbench-cpu-cache.cpp \
+	rbench-cpu-int.cpp
 
 # Source of interferences(SOI) core file
 CORE_SRC = \

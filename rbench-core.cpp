@@ -135,7 +135,7 @@ void bench_args_t::print_argsinfo() {
     printf( "%s\n%-4sthreads = %u, strength = %u%%, period = %uus\n" , 
             bench_name.c_str() , "" , threads , strength , period ) ;
     if( get_arg_flag( flags , FLAG_IS_LIMITED ) ){
-        printf( "%-4slimited , rounds = %d, " , "" , limit_round ) ;
+        printf( "%-4slimited , rounds = %ld, " , "" , limit_round ) ;
     } else{
         printf( "%-4srounds unlimited, " , "" ) ;
     }
