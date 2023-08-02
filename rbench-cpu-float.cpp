@@ -9,16 +9,18 @@
 
 template<typename T, typename Func>
 static void float_ops_ikernel( T r_final , Func _sin , Func _cos ){
-    mwc_t mwc_eng ;
-    mwc_eng.set_default_seed() ;
-    const uint32_t r1 = mwc_eng.mwc32() ;
-    const uint32_t r2 = mwc_eng.mwc32() ;
+    // mwc_t mwc_eng ;
+    // mwc_eng.set_default_seed() ;
+    // const uint32_t r1 = mwc_eng.mwc32() ;
+    // const uint32_t r2 = mwc_eng.mwc32() ;
+    const uint32_t r1 = 820856226u ;
+    const uint32_t r2 = 2331188998u ;
 
     T register a = (T) 0.18728L ,
                b = (T) ( (double)r1 / 65536.0 ) ,
                c = (T) ( (double)r2 / 65536.0 ) ,
                d = (T) 0.0 , r ;
-    for( int i = 0 ; i < 1000 ; i ++ ){
+    for( float i = 0.0 ; i < 1000.0 ; i ++ ){
         do{
             a = a + b ;
             d = a * c ;
