@@ -26,7 +26,8 @@ SOI_SRC = \
 	rbench-core.cpp \
 	rbench-cpu-cache.cpp \
 	rbench-cpu-int.cpp \
-	rbench-cpu-float.cpp 
+	rbench-cpu-float.cpp \
+	rbench-cpu-tlb.cpp 
 
 # Source of interferences(SOI) core file
 CORE_SRC = \

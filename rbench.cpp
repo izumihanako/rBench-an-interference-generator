@@ -15,10 +15,11 @@ static const help_info_t help_entrys[] = {
     { "l"            , "limited=N"      , NULL         , "(stressor) If limited, benchmark will stop after N rounds. Must have \"=\" !!!" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For memBw stressor, stress mem bw for W MB/s" },
     { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of benchmark" } ,
+    { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), Make sure that this parameter is greater than the total memory size that tlb can cache"} ,
     { NULL           , "parallel"       , NULL         , "(global) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified benchmark. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, cpu-float, "    } ,
+                                                         "cacheL3, cache, cpu-int, cpu-float, tlb"    } ,
     { "s P"          , "strength N"     , NULL         , "(stressor) Set load strength to P% for every instance (run P% time per time granularity)" } ,
     { "t N"          , "time N"         , NULL         , "(stressor) If specified, benchmark will stop after N seconds" } ,
     { NULL           , NULL             , NULL         , NULL }
@@ -37,6 +38,7 @@ static const struct option long_options[] = {
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
+    { "page-tot"     , required_argument , 0 , OPT_page_tot      } ,
     { "parallel"      , no_argument       , 0 , OPT_parallel      } ,
     { "period"        , required_argument , 0 , OPT_period        } ,
     { 0               , 0                 , 0 , 0                 }
@@ -49,6 +51,7 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cacheL3" , &cache_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
+    pair< string , bench_func_t >( "tlb" , &tlb_bench_entry ) ,
 } ;
 
 struct bench_task_t{
@@ -149,7 +152,10 @@ void parse_opts( int argc , char **argv ){
                     bench_tasks.emplace_back( (*bench_funcs.find( bench_name )).second , *(new bench_args_t()) ) ;
                     pargs = &( *bench_tasks.rbegin() ).args ;
                     pargs->bench_name = bench_name ;
-
+                    // tlb step size setting
+                    if( !strncasecmp( optarg , "tlb" , 3 ) ){
+                        pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
+                    }
                     // cache size level setting
                     if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
@@ -223,10 +229,27 @@ void parse_opts( int argc , char **argv ){
                 pargs->bench_name = string( "cacheL3" ) ;
                 pargs->cache_size = cpuinfo.get_data_cache_size_level( 3 ) ;
                 pargs->limit_round = ONE_THOUSAND * 100  ;
+                // tlb speed
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "tlb" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "tlb" ) ;
+                pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
+                pargs->limit_round = ONE_THOUSAND * 10  ;
+                // break 
                 break ;
             }
             case OPT_debug :{
                 set_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ;
+                break ;
+            }
+            case OPT_page_tot :{
+                uint64_t i64 = atoi( optarg ) * MB ;
+                if( i64 <= 1 * GB ){
+                    sprintf( infobuf , "page total is (%lu). Make sure that the page tot "
+                    "is greater than the total memory size that tlb can cache" , i64 ) ;
+                    pr_warning( infobuf ) ;
+                }
+                pargs->tlb_page_tot = i64 ;
                 break ;
             }
             case OPT_parallel :{

@@ -167,7 +167,7 @@ void cpuinfo_t::print_cpuinfo() {
     printf( "cpuinfo:\n") ;
     printf( "    core count  : %-2d\n" , core_count ) ;
     printf( "    core online : %-2d\n" , online_count ) ;
-    printf( "    page size   : %-2d KB\n" , page_size ) ;
+    printf( "    page size   : %-2d Bytes\n" , page_size ) ;
     printf( "    cache count : %-2d\n" , cache_count ) ;
     
     for( int i = 0 ; i < cache_count ; i ++ ){

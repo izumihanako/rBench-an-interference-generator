@@ -61,6 +61,7 @@ struct bench_args_t{
     union{
         uint64_t mem_bandwidth ;
         uint64_t cache_size ;
+        uint64_t tlb_page_tot ; // Larger than the sum of page sizes that tlb can cache
     } ;
     bench_args_t(){
         threads = 1 ;
@@ -106,6 +107,7 @@ enum argvopt_t{
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
+    OPT_page_tot ,
     OPT_parallel ,
     OPT_period ,
 } ;
@@ -224,10 +226,11 @@ struct mwc_t {
 #define OPTIMIZE0           __attribute__((optnone))
 
 // vitural memory page size is 4K when traslating from level-4 page table 
-#define PAGESIZE            4096
+#define PAGESIZE                4096
 // vitural memory page size is 2M when traslating from level-3 page table 
-#define PAGESIZEHUGE        2097152
-#define UNIVERSAL_CACHELINE 64
+#define PAGESIZEHUGE            2097152
+#define UNIVERSAL_CACHELINE     64
+#define DEFAULT_TLB_PAGE_TOT    (8*GB)
 
 // alias_cast to avoid "dereferencing type-punned pointer will break strict-aliasing rules" warning
 template<typename T, typename F>
@@ -259,6 +262,7 @@ void strength_to_time( const double , const double , const uint32_t ,
 int32_t cache_bench_entry( bench_args_t ) ;
 int32_t cpu_int_bench_entry( bench_args_t ) ;
 int32_t cpu_float_bench_entry( bench_args_t ) ;
+int32_t tlb_bench_entry( bench_args_t ) ;
 
 
 // mutex print 

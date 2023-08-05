@@ -1,3 +1,4 @@
+.lshw
 .cpuinfo 
 .interrupts
 .gdbinit
