@@ -14,21 +14,22 @@
 #define L1_SIZE (32768)
 #define L2_SIZE (1048576)
 #define L3_SIZE (14417920)
+#define GB      (1ULL << 30)
 
 // Galois LFSR
 #define MASK 0xd0000001u
 #define rand ( lfsr = ( lfsr >> 1 ) ^ ( unsigned int ) \
                ( 0 - ( lfsr & 1u ) & MASK ) )
 #define CACHE_LINE (64)
-#define CACHE_SIZE L3_SIZE
-#define r (rand%CACHE_SIZE)
-const uint32_t OP_LIMIT = 2000000000 ;
+#define CACHE_SIZE (4*GB)
+#define r ((rand<<2)%CACHE_SIZE)
+const uint32_t OP_LIMIT = 200000000 ;
 
 static void rand_access( 
-    volatile char* block_aligned_
+    char* block_aligned_
 ){
-    printf( "rand access to %d\n" , CACHE_SIZE ) ;
-    register volatile char* block_aligned = block_aligned_ ;
+    printf( "rand access to %lu\n" , CACHE_SIZE ) ;
+    register char* block_aligned = block_aligned_ ;
     register unsigned int lfsr = 1 ;
     register uint32_t count = 0 ;
     while( 1 ){
@@ -81,7 +82,7 @@ static void stream_access(
 
 int main( int argc , char **argv ){
     
-    char volatile *block , *block_aligned ;
+    char *block , *block_aligned ;
     block = (char*)mmap( NULL , CACHE_SIZE << 1 , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
 
     block_aligned = block + CACHE_LINE - (uintptr_t)block % CACHE_LINE ;
@@ -98,8 +99,7 @@ perf stat -B -r 5 \
           -e mem_load_retired.l1_hit -e mem_load_retired.l1_miss \
           -e mem_load_retired.l2_hit -e mem_load_retired.l2_miss \
           -e mem_load_retired.l3_hit -e mem_load_retired.l3_miss \
-          -e dTLB-loads -e dTLB-stores \
+          -e dTLB-loads \
           -e mem_inst_retired.stlb_miss_loads -e dTLB-load-misses \
-          -e mem_inst_retired.stlb_miss_stores -e dTLB-store-misses \
-          taskset -c 22 ./validate_cacheL3.exe
+          taskset -c 22 ./validate_tlb.exe
 */

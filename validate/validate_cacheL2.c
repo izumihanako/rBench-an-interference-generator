@@ -89,7 +89,6 @@ int main( int argc , char **argv ){
 }
 
 /*
-gcc validate_cacheL2.c -o validate_cacheL2 -std=gnu11 -O0 && \
 perf stat -B -r 5 \
           -e cycles -e instructions \
           -e L1-icache-load-misses \
@@ -99,5 +98,6 @@ perf stat -B -r 5 \
           -e mem_load_retired.l1_hit -e mem_load_retired.l1_miss \
           -e mem_load_retired.l2_hit -e mem_load_retired.l2_miss \
           -e mem_load_retired.l3_hit -e mem_load_retired.l3_miss \
-          taskset -c 20 ./validate_cacheL2
+          -e mem_inst_retired.stlb_miss_loads \
+          taskset -c 20 ./validate_cacheL2.exe
 */

@@ -155,4 +155,4 @@ int main(){
 
 }
 // g+= 1.0 validate_cpu_float.cpp -o validate_cpu_float -std=c+= 1.011 -O0
-// taskset -c 20 ./validate_cpu_float
+// taskset -c 20 ./validate_cpu_float.exe
