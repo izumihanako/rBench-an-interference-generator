@@ -11,7 +11,7 @@ LD = g++
 LDLIBS = -pthread
 CC = g++
 
-# Default -O2 if optimization level not defined
+# Default -O1 if optimization level not defined
 ifeq "$(findstring -O,$(CFLAGS))" ""
 	CFLAGS += -O1
 endif

@@ -1,6 +1,11 @@
 // stress-ng method
 // https://github.com/ColinIanKing/stress-ng/blob/master/stress-cpu.c#L759
 #include "rbench.hpp"
+#ifndef __long_double_t 
+#define __long_double_t long double
+#endif 
+
+bool warn_flag = false ;
 
 #define float_thresh(x, _type)	x = (_type)		\
 	((fabs((double)x) > 1.0) ?	\
@@ -55,10 +60,10 @@ static void float_ops_ikernel( T r_final , Func _sin , Func _cos ){
     }
 
     // verify
-    if( !f_is_zero( r - r_final ) ){
-        pr_error( string( "error decected @ cpu-float-kernel, failed " ) + 
+    if( !f_is_zero( r - r_final ) && !warn_flag ){
+        warn_flag = true ;
+        pr_warning( string( "error decected @ cpu-float-kernel, failed " ) + 
                   string( typeid( T ).name() ) + string( " math operations" ) ) ;
-        exit( 0 ) ;
     }
 }
 

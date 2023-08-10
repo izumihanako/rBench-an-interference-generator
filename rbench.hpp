@@ -9,8 +9,10 @@
 #include <cstdint>
 #include <typeinfo>
 #include <vector>
+#include <memory>
 #include <map>
 #include <ctime>
+#include <cmath>
 #include <mutex>
 #include <thread>
 #include <fstream>
@@ -276,6 +278,11 @@ void pr_info( char* ) ;
 void pr_debug( string ) ;
 void pr_debug( char* ) ;
 void pr_debug( void(* prfunc )() ) ;
+
+template<typename T>
+T fabs( T x ){
+    return x > 0 ? x : -x ;
+}
 
 // float is zero
 template<typename T>

@@ -28,7 +28,7 @@ const uint32_t OP_LIMIT = 200000000 ;
 static void rand_access( 
     char* block_aligned_
 ){
-    printf( "rand access to %lu\n" , CACHE_SIZE ) ;
+    printf( "rand access to %llu\n" , CACHE_SIZE ) ;
     register char* block_aligned = block_aligned_ ;
     register unsigned int lfsr = 1 ;
     register uint32_t count = 0 ;
@@ -65,7 +65,7 @@ static void rand_access(
 static void stream_access(
     volatile char* block_aligned 
 ){
-    printf( "stream access to %d\n" , CACHE_SIZE ) ;
+    printf( "stream access to %llu\n" , CACHE_SIZE ) ;
     register uint32_t count = 0 ;
     register volatile uint8_t* first_half = block_aligned ;
     register volatile uint8_t* second_half = block_aligned + ( CACHE_SIZE / 2 ) ;
