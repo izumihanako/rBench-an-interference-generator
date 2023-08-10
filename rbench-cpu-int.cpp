@@ -8,7 +8,7 @@
 #define CAST_TO_UINT128(hi, lo)   ((((__uint128_t)hi << 64) | (__uint128_t)lo))
 
 template<typename T, typename C>
-static void int_ops_ikernel( T _a , T _b , C _c1 , C _c2 , C _c3 ){
+static void OPTIMIZE0 int_ops_ikernel( T _a , T _b , C _c1 , C _c2 , C _c3 ){
     const T mask = (T)~(T)0 ;
     const T a_final = _a ;
     const T b_final = _b ;

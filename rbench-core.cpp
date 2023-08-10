@@ -198,7 +198,7 @@ void strength_to_time( const double sgl_round_time , const double sgl_idle_time 
         double x_time = x * ( sgl_round_time + sgl_idle_time ) * ONE_MILLION ;
         double ratio = period / ( x_time + y ) ;
         y *= ratio , x *= ratio ;
-        if( x < 0 || isnan( x ) ){
+        if( x < 0 || std::isnan( x ) ){
             x = 100 , y = 0 ;
         }
         module_sleepus = (int32_t)round( y ) ;

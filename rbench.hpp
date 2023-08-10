@@ -225,7 +225,7 @@ struct mwc_t {
 #define HOT                 __attribute__ ((hot))
 #define OPTIMIZE3           __attribute__((optimize("-O3")))
 #define OPTIMIZE2           __attribute__((optimize("-O2")))
-#define OPTIMIZE0           __attribute__((optnone))
+#define OPTIMIZE0           __attribute__((optimize("-O0")))
 
 // vitural memory page size is 4K when traslating from level-4 page table 
 #define PAGESIZE                4096

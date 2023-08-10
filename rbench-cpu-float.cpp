@@ -13,7 +13,7 @@ bool warn_flag = false ;
 	((_type)(x)))
 
 template<typename T, typename Func>
-static void float_ops_ikernel( T r_final , Func _sin , Func _cos ){
+static void OPTIMIZE0 float_ops_ikernel( T r_final , Func _sin , Func _cos ){
     // mwc_t mwc_eng ;
     // mwc_eng.set_default_seed() ;
     // const uint32_t r1 = mwc_eng.mwc32() ;

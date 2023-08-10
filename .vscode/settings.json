@@ -13,7 +13,8 @@
         "string": "cpp",
         "unordered_map": "cpp",
         "cstdint": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "cmath": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "C_Cpp.default.compilerPath": "/usr/bin/g++"

@@ -1,6 +1,7 @@
 suffix = .exe
 
 all: validate_cacheL1.exe validate_cacheL2.exe validate_cacheL3.exe \
+	validate_cpu_divfloat.exe \
 	validate_cpu_float.exe validate_cpu_int.exe validate_tlb.exe
 
 validate_cacheL1.exe: validate_cacheL1.c
@@ -14,6 +15,9 @@ validate_cacheL3.exe: validate_cacheL3.c
 
 validate_cpu_float.exe: validate_cpu_float.cpp
 	g++ validate_cpu_float.cpp -o validate_cpu_float$(suffix) -std=c++11 -O0
+
+validate_cpu_divfloat.exe: validate_cpu_divfloat.cpp
+	g++ validate_cpu_divfloat.cpp -o validate_cpu_divfloat$(suffix) -std=c++11 -O0
 
 validate_cpu_int.exe: validate_cpu_int.cpp
 	g++ validate_cpu_int.cpp -o validate_cpu_int$(suffix) -std=c++11 -O0
