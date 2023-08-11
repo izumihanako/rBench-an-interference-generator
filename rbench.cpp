@@ -9,17 +9,17 @@ int32_t glob_thr_cnt ;
 
 // help options
 static const help_info_t help_entrys[] = {
-    { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N" } ,
+    { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N (bytes)" } ,
     { NULL           , "check"          , NULL         , "(global) Run preset system check tasks. If this option is present, all other options will be ignored" } ,
     { NULL           , "debug"          , NULL         , "(global) Output debug information" } ,
     { "l"            , "limited=N"      , NULL         , "(stressor) If limited, benchmark will stop after N rounds. Must have \"=\" !!!" } ,
-    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For memBw stressor, stress mem bw for W MB/s" },
+    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, Set mem-bandwidth to W MB/s for every instance" },
     { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of benchmark" } ,
     { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), Make sure that this parameter is greater than the total memory size that tlb can cache"} ,
-    { NULL           , "parallel"       , NULL         , "(global) Run in parallel mode"} ,
+    { NULL           , "parallel"       , NULL         , "(global, beta) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified benchmark. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, cpu-float, tlb"    } ,
+                                                         "cacheL3, cache, cpu-int, cpu-float, tlb, mem-bw"    } ,
     { "s P"          , "strength N"     , NULL         , "(stressor) Set load strength to P% for every instance (run P% time per time granularity)" } ,
     { "t N"          , "time N"         , NULL         , "(stressor) If specified, benchmark will stop after N seconds" } ,
     { NULL           , NULL             , NULL         , NULL }
@@ -38,7 +38,7 @@ static const struct option long_options[] = {
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
-    { "page-tot"     , required_argument , 0 , OPT_page_tot      } ,
+    { "page-tot"      , required_argument , 0 , OPT_page_tot      } ,
     { "parallel"      , no_argument       , 0 , OPT_parallel      } ,
     { "period"        , required_argument , 0 , OPT_period        } ,
     { 0               , 0                 , 0 , 0                 }
@@ -52,6 +52,7 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
     pair< string , bench_func_t >( "tlb" , &tlb_bench_entry ) ,
+    pair< string , bench_func_t >( "mem-bw" , &mem_bw_bench_entry ) ,
 } ;
 
 struct bench_task_t{
@@ -134,6 +135,16 @@ void parse_opts( int argc , char **argv ){
                 }
                 break ;
             }
+            case OPT_mem_bandwidth:{
+                int32_t i32 = (int32_t)atoi( optarg ) ;
+                if( i32 <= 0 ){
+                    sprintf( infobuf , "mem bandwidth (%d) needs to be a positive number, ignored" , i32 ) ;
+                    pr_warning( infobuf ) ;
+                    i32 = 0 ;
+                }
+                pargs->mem_bandwidth = MB * i32 ;
+                break ;
+            }
             case OPT_ninstance:{
                 int32_t i32 = (int32_t)atoi( optarg ) ;
                 if( i32 < 1 || i32 > cpuinfo.online_count ){
@@ -157,7 +168,7 @@ void parse_opts( int argc , char **argv ){
                         pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
                     }
                     // cache size level setting
-                    if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
+                    else if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
                     } else if( !strncasecmp( optarg , "cacheL2" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 2 ) ;

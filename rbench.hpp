@@ -61,9 +61,9 @@ struct bench_args_t{
     uint32_t flags ;
     uint32_t period ; // us 
     union{
-        uint64_t mem_bandwidth ;
-        uint64_t cache_size ;
-        uint64_t tlb_page_tot ; // Larger than the sum of page sizes that tlb can cache
+        uint64_t mem_bandwidth ; // bytes 
+        uint64_t cache_size ;    // bytes 
+        uint64_t tlb_page_tot ;  // Larger than the sum of page sizes that tlb can cache
     } ;
     bench_args_t(){
         threads = 1 ;
@@ -257,6 +257,16 @@ T alias_cast(F raw_data){
 #define STRENGTH_CONTROL_RBOUND 0.5
 void strength_to_time( const double , const double , const uint32_t , 
                        const uint32_t , int32_t& , int32_t& ) ;
+
+// membw run time calculator 
+// first translate membw to strength
+// then calculate as before
+// params: ( bytes , aimbw , sgl_time , sgl_idle , period , module_runrounds , module_sleepus )
+#define MEMBW_CONTROL_LBOUND (50*MB)
+#define MEMBW_CONTROL_RBOUND (50*MB)
+void membw_to_time( const uint64_t , const uint64_t ,
+                    const double , const double , 
+                    const uint32_t , int32_t& , int32_t& ) ;
 // useless
 // void try_precise_usleep( int32_t sleepus ) ;
 
@@ -265,6 +275,7 @@ int32_t cache_bench_entry( bench_args_t ) ;
 int32_t cpu_int_bench_entry( bench_args_t ) ;
 int32_t cpu_float_bench_entry( bench_args_t ) ;
 int32_t tlb_bench_entry( bench_args_t ) ;
+int32_t mem_bw_bench_entry( bench_args_t ) ;
 
 
 // mutex print 
@@ -278,6 +289,9 @@ void pr_info( char* ) ;
 void pr_debug( string ) ;
 void pr_debug( char* ) ;
 void pr_debug( void(* prfunc )() ) ;
+
+// mmap with retry
+void* mmap_with_retry( uint64_t size ) ; 
 
 template<typename T>
 T fabs( T x ){

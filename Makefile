@@ -6,9 +6,9 @@ VALIDATEDIR  = $(ROOTDIR)/validate
 KERNEL=$(shell uname -s)
 NODENAME=$(shell uname -n)
 
-CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11
+CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11 -mcmodel=medium
 LD = g++
-LDLIBS = -pthread
+LDLIBS = -pthread -fopenmp
 CC = g++
 
 # Default -O1 if optimization level not defined
@@ -27,7 +27,8 @@ SOI_SRC = \
 	rbench-cpu-cache.cpp \
 	rbench-cpu-int.cpp \
 	rbench-cpu-float.cpp \
-	rbench-cpu-tlb.cpp 
+	rbench-cpu-tlb.cpp \
+	rbench-mem-bw.cpp
 
 # Source of interferences(SOI) core file
 CORE_SRC = \

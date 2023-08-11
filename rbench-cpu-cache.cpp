@@ -43,7 +43,7 @@ static void cache_bench_rand_access_module( int32_t thrid , bench_args_t args , 
     char infobuf[1024] ;
     
     // Cache size range check
-    uint32_t cache_size = (uint32_t) args.cache_size ;
+    uint32_t cache_size = (uint32_t) args.cache_size , cache_align = cache_line_size ;
     if( cache_size != args.cache_size ){
         sprintf( infobuf , "%s( thread %d ): The given cache size %llu exceeds the range of uint32_t" , 
             args.bench_name.c_str() , thrid , (unsigned long long) args.cache_size ) ;
@@ -52,17 +52,13 @@ static void cache_bench_rand_access_module( int32_t thrid , bench_args_t args , 
     }
     
     // Allocate memory buffer for cache benchmark
-    block = (char*)mmap( NULL , cache_size << 1 , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
+    block = (char*) mmap_with_retry( cache_size + cache_align ) ;
     if( UNLIKELY( block == MAP_FAILED ) ){
-        sleep( 1 ) ; // wait for 1 second then retry
-        block = (char*)mmap( NULL , cache_size << 1 , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
-        if( block == MAP_FAILED ){
-            sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
-            pr_error( infobuf ) ;
-            return ;
-        }
+        sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
+        pr_error( infobuf ) ;
+        return ;
     }
-    block_aligned = block + cache_line_size - (uintptr_t)block % cache_line_size ;
+    block_aligned = block + cache_align - (uintptr_t)block % cache_align ;
 
     // Calculate load parameters 
     mwc_t mwc_eng ;
@@ -144,7 +140,7 @@ static void cache_bench_rand_access_module( int32_t thrid , bench_args_t args , 
         args.bench_name.c_str() , thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
     // Deallocate the memory buffer
-    munmap( (void*)block , cache_size << 1 ) ;
+    munmap( (void*)block , cache_size + cache_align ) ;
 }
 
 int32_t cache_bench_entry( bench_args_t args ){

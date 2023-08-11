@@ -45,6 +45,7 @@ void cpuinfo_t::read_cpuinfo(){
     core_count = (int32_t) sysconf( _SC_NPROCESSORS_CONF ) ;
     online_count = (int32_t) sysconf( _SC_NPROCESSORS_ONLN ) ;
     page_size = (int32_t) sysconf( _SC_PAGE_SIZE ) ;
+    if( page_size <= 0 ) page_size = PAGESIZE ;
 
     fstream fs ;
     char buffer[4096] ;
@@ -180,10 +181,11 @@ void cpuinfo_t::print_cpuinfo() {
     }
 }
 
+#define FULL_STRENGTH100_MODULE_ROUND 100
 void strength_to_time( const double sgl_round_time , const double sgl_idle_time , const uint32_t strength_ , 
                        const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
     if( strength_ == 100 ){
-        module_runround = 100 ;
+        module_runround = FULL_STRENGTH100_MODULE_ROUND ;
         module_sleepus = 0 ;
     } else {
         // a = sgl_round_time , b = sgl_idle_time , p = strength
@@ -198,13 +200,39 @@ void strength_to_time( const double sgl_round_time , const double sgl_idle_time 
         double x_time = x * ( sgl_round_time + sgl_idle_time ) * ONE_MILLION ;
         double ratio = period / ( x_time + y ) ;
         y *= ratio , x *= ratio ;
+        ratio = round(x) / x ;
         if( x < 0 || std::isnan( x ) ){
-            x = 100 , y = 0 ;
+            x = FULL_STRENGTH100_MODULE_ROUND , y = 0 ;
         }
-        module_sleepus = (int32_t)round( y ) ;
         module_runround = (int32_t)round( x ) ;
+        module_sleepus = (int32_t)round( y * ratio ) ;
     }
     return ;
+}
+
+#define FULL_MEMBW_MODULE_ROUND 200
+void membw_to_time( const uint64_t bytes , const uint64_t aim_bw ,
+                    const double sgl_round_time , const double sgl_idle_time , 
+                    const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
+    double full_bw = (double) bytes / sgl_round_time ;
+    double eq_strength_percent = (double) aim_bw / full_bw * 100 ;
+    if( aim_bw <= 0 || eq_strength_percent >= 100 ){
+        module_runround = FULL_MEMBW_MODULE_ROUND ;
+        module_sleepus = 0 ;
+    } else {
+        double p = eq_strength_percent / 100.0 ;
+        double y = ( 1 - p ) * period ; // let y = ( 1 - p ) * period
+        double x = y * p / ( ( sgl_round_time - p * sgl_round_time - p * sgl_idle_time ) * ONE_MILLION ) ;
+        double x_time = x * ( sgl_round_time + sgl_idle_time ) * ONE_MILLION ;
+        double ratio = period / ( x_time + y ) ;
+        y *= ratio , x *= ratio ;
+        ratio = round(x) / x ;
+        if( x < 0 || std::isnan( x ) ){
+            x = FULL_MEMBW_MODULE_ROUND , y = 0 ;
+        }
+        module_runround = (int32_t)round( x ) ;
+        module_sleepus = (int32_t)round( y * ratio ) ;
+    }
 }
 
 // void try_precise_usleep( int32_t sleepus ){
@@ -283,4 +311,13 @@ void pr_debug( void (*prfunc)() ){
     global_pr_mtx.lock() ;
     prfunc() ;
     global_pr_mtx.unlock() ;
+}
+
+void* mmap_with_retry( uint64_t size ){
+    void* rt = mmap( NULL , size , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
+    if( UNLIKELY( rt == MAP_FAILED ) ){
+        sleep( 1 ) ; // wait for 1 second then retry
+        rt = mmap( NULL , size , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
+    }
+    return rt ;
 }

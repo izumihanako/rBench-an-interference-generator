@@ -19,18 +19,14 @@ static void tlb_bench_module( int32_t thrid , bench_args_t args ){
 
     // Allocate memory buffer for tlb benchmark
     // With a page size of 4k, the total capacity required for 15,360 entries is about 40960000
-    uint64_t buffer_size = args.tlb_page_tot ;
-    block = (char*)mmap( NULL , buffer_size + cpuinfo.page_size , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
-    if( UNLIKELY( block == MAP_FAILED ) ){
-        sleep( 1 ) ; // wait for 1 second then retry
-        block = (char*)mmap( NULL , buffer_size + cpuinfo.page_size , PROT_READ | PROT_WRITE , MAP_PRIVATE | MAP_ANONYMOUS , -1 , 0 ) ;
-        if( block == MAP_FAILED ){
-            sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
-            pr_error( infobuf ) ;
-            return ;
-        }
+    uint64_t buffer_size = args.tlb_page_tot , buffer_align = cpuinfo.page_size ;
+    block = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    if( block == MAP_FAILED ){
+        sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
+        pr_error( infobuf ) ;
+        return ;
     }
-    block_aligned = block + cpuinfo.page_size - (uintptr_t)block % cpuinfo.page_size ;
+    block_aligned = block + buffer_align - (uintptr_t)block % buffer_align ;
 
     // generate memory access sequence
     mwc_t mwc_eng ;
@@ -118,7 +114,7 @@ static void tlb_bench_module( int32_t thrid , bench_args_t args ){
         args.bench_name.c_str() , thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
     // Deallocate the memory buffer
-    munmap( (void*)block , buffer_size + cpuinfo.page_size ) ;
+    munmap( (void*)block , buffer_size + buffer_align ) ;
 }
 
 int32_t tlb_bench_entry( bench_args_t args ){
