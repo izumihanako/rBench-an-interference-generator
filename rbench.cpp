@@ -190,6 +190,11 @@ void parse_opts( int argc , char **argv ){
                     pr_warning( infobuf ) ;
                     i32 = newi32 ;
                 }
+                if( !strncasecmp( pargs->bench_name.c_str() , "mem-bw" , 6 ) ){
+                    sprintf( infobuf , "strength setting are not valid for mem bandwidth stressor, ignored" ) ;
+                    pr_warning( infobuf ) ;
+                    break ;
+                }
                 pargs->strength = (uint8_t) i32 ;
                 break ;
             }
