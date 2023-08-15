@@ -89,6 +89,7 @@ enum argflag_t{
     FLAG_IS_CHECK ,
     FLAG_IS_RUN_PARALLEL ,
     FLAG_COUNT ,
+    FLAG_NO_WARN ,
 } ;
 void clr_arg_flag( uint32_t& , argflag_t ) ;
 void set_arg_flag( uint32_t& , argflag_t ) ;
@@ -109,6 +110,7 @@ enum argvopt_t{
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
+    OPT_no_warn ,
     OPT_page_tot ,
     OPT_parallel ,
     OPT_period ,

@@ -15,6 +15,7 @@ static const help_info_t help_entrys[] = {
     { "l"            , "limited=N"      , NULL         , "(stressor) If limited, benchmark will stop after N rounds. Must have \"=\" !!!" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, Set mem-bandwidth to W MB/s for every instance" },
     { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of benchmark" } ,
+    { NULL           , "no-warn"        , NULL         , "(global) Do not print warning information" } ,
     { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), Make sure that this parameter is greater than the total memory size that tlb can cache"} ,
     { NULL           , "parallel"       , NULL         , "(global, beta) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
@@ -38,6 +39,7 @@ static const struct option long_options[] = {
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
+    { "no-warn"       , no_argument       , 0 , OPT_no_warn       } ,
     { "page-tot"      , required_argument , 0 , OPT_page_tot      } ,
     { "parallel"      , no_argument       , 0 , OPT_parallel      } ,
     { "period"        , required_argument , 0 , OPT_period        } ,
@@ -256,6 +258,10 @@ void parse_opts( int argc , char **argv ){
             }
             case OPT_debug :{
                 set_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ;
+                break ;
+            }
+            case OPT_no_warn :{
+                set_arg_flag( global_flag , FLAG_NO_WARN ) ;
                 break ;
             }
             case OPT_page_tot :{

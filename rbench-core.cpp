@@ -266,14 +266,18 @@ void pr_info( char* info ){
 }
 
 void pr_warning( string info ){
+    if( get_arg_flag( global_flag , FLAG_NO_WARN ) == 1 )
+        return ;
     global_pr_mtx.lock() ;
-    printf( "Warning: %s\n" , info.c_str() ) ;
+    fprintf( stderr ,  "Warning: %s\n" , info.c_str() ) ;
     global_pr_mtx.unlock() ;
 }
 
 void pr_warning( char* info ){
+    if( get_arg_flag( global_flag , FLAG_NO_WARN ) == 1 )
+        return ;
     global_pr_mtx.lock() ;
-    printf( "Warning: %s\n" , info ) ;
+    fprintf( stderr , "Warning: %s\n" , info ) ;
     global_pr_mtx.unlock() ;
 }
 
