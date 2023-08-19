@@ -2,6 +2,7 @@
 .cpuinfo 
 .interrupts
 .gdbinit
+*.txt
 icmp
 
 
