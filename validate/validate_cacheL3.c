@@ -101,5 +101,5 @@ perf stat -B -r 5 \
           -e dTLB-loads -e dTLB-stores \
           -e mem_inst_retired.stlb_miss_loads -e dTLB-load-misses \
           -e mem_inst_retired.stlb_miss_stores -e dTLB-store-misses \
-          taskset -c 22 ./validate_cacheL3.exe
+          taskset -c 20 ./validate_cacheL3.exe
 */

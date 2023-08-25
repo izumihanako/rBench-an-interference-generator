@@ -10,6 +10,7 @@ CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11 -mcmod
 LD = g++
 LDLIBS = -pthread -fopenmp
 CC = g++
+AS = as
 
 # Default -O1 if optimization level not defined
 ifeq "$(findstring -O,$(CFLAGS))" ""
@@ -28,6 +29,7 @@ SOI_SRC = \
 	rbench-cpu-int.cpp \
 	rbench-cpu-float.cpp \
 	rbench-cpu-tlb.cpp \
+	rbench-cpu-l1i.cpp \
 	rbench-mem-bw.cpp
 
 # Source of interferences(SOI) core file
@@ -36,13 +38,20 @@ CORE_SRC = \
 	core-lfsr.cpp 
 
 SRC = $(CORE_SRC) $(SOI_SRC)
-OBJS += $(SRC:.cpp=.o)
+OBJS = $(SRC:.cpp=.o) rbench-cpu-l1i-kernel.o
+ASMS = \
+	rbench-cpu-l1i-kernel.asm
 BINNAME = rbench.exe
 
 all : rbench validate 
 
 # dependencies micro : $<
 # aim micro : $@
+rbench-cpu-l1i-kernel.o : rbench-cpu-l1igen.cpp
+	$(CC) $(CFLAGS) $< -o rbench-cpu-l1igen.exe
+	./rbench-cpu-l1igen.exe > rbench-cpu-l1i-kernel.asm
+	$(AS) -c rbench-cpu-l1i-kernel.asm -o $@ 
+
 %.o : %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -59,5 +68,6 @@ FORCE: ;
 clean:
 	rm -f ${DESTDIR}$(BINNAME)
 	rm -f ${DESTDIR}$(OBJS)
+	rm -f ${DESTDIR}$(ASMS)
 	rm -f ${DESTDIR}*.exe
 	cd $(VALIDATEDIR) ; make clean

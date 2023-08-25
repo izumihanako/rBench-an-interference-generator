@@ -20,7 +20,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , "parallel"       , NULL         , "(global, beta) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified benchmark. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, cpu-float, tlb, mem-bw"    } ,
+                                                         "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, tlb, mem-bw"    } ,
     { "s P"          , "strength N"     , NULL         , "(stressor) Set load strength to P% for every instance (run P% time per time granularity)" } ,
     { "t N"          , "time N"         , NULL         , "(stressor) If specified, benchmark will stop after N seconds" } ,
     { NULL           , NULL             , NULL         , NULL }
@@ -53,6 +53,7 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cacheL3" , &cache_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
+    pair< string , bench_func_t >( "cpu-l1i" , &cpu_l1i_bench_entry ) ,
     pair< string , bench_func_t >( "tlb" , &tlb_bench_entry ) ,
     pair< string , bench_func_t >( "mem-bw" , &mem_bw_bench_entry ) ,
 } ;

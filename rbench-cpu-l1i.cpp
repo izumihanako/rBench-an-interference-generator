@@ -1,90 +1,29 @@
 // stress-ng method
 // https://github.com/ColinIanKing/stress-ng/blob/master/stress-cpu.c#L759
 #include "rbench.hpp"
-#ifndef __long_double_t 
-#define __long_double_t long double
-#endif 
 
-bool warn_flag = false ;
+#define C1 	(0xf0f0f0f0f0f0f0f0ULL)
+#define C2	(0x1000100010001000ULL)
+#define C3	(0xffeffffefebefffeULL)
+#define CAST_TO_UINT128(hi, lo)   ((((__uint128_t)hi << 64) | (__uint128_t)lo))
 
-#define float_thresh(x, _type)	x = (_type)		\
-	((fabs((double)x) > 1.0) ?	\
-	((_type)(0.1 + (double)x - (double)(long)x)) :	\
-	((_type)(x)))
+extern "C" int cpu_l1i_kernel() ;
+// static void 
+// dummy(){
+//     __asm__
+//         (
+//            #include "rbench-cpu-l1i-kernel.asm"
+//         );
+// }
 
-template<typename T, typename Func>
-static void OPTIMIZE0 float_ops_ikernel( T r_final , Func _sin , Func _cos ){
-    // mwc_t mwc_eng ;
-    // mwc_eng.set_default_seed() ;
-    // const uint32_t r1 = mwc_eng.mwc32() ;
-    // const uint32_t r2 = mwc_eng.mwc32() ;
-    const uint32_t r1 = 820856226u ;
-    const uint32_t r2 = 2331188998u ;
-
-    T register a = (T) 0.18728L ,
-               b = (T) ( (double)r1 / 65536.0 ) ,
-               c = (T) ( (double)r2 / 65536.0 ) ,
-               d = (T) 0.0 , r ;
-    for( float i = 0.0 ; i < 1000.0 ; i ++ ){
-        do{
-            a = a + b ;
-            d = a * c ;
-            b = a * c ;
-            c = a - b ;
-            d = a / (T)8.1 ;
-            float_thresh( d , T ) ;
-            a = c / (T)5.1923 ;
-            float_thresh( a , T ) ;
-            float_thresh( c , T ) ;
-            b = c + a ;
-            c = b * (T)_sin(b) ;
-            d = d + b + (T)_sin(a) ;
-            a = (T)_cos( (double)( b + c ) ) ;
-            b = b * c ; 
-            c = c + (T)1.5 ;
-            d = d - (T)_sin(c) ;
-            a = a * (T)_cos(b) ;
-            b = b + (T)_cos(c) ;
-            c = (T)_sin( a + b ) / (T)2.344 ;
-            b = d - (T)0.5 ;
-        } while( 0 ) ;
-    } 
-
-    r = a + b + c + d ;
-    // Calculate verification answer
-    if( false ){ // Calculate before compilation
-        std::stringstream ss ; ss.precision( 15 ) ;
-        string sr ;
-        ss << (double)r , ss >> sr ; ss.clear() ;
-        printf( "%s: r = %s \n" , typeid( T ).name() , sr.c_str() ) ;
-    }
-
-    // verify
-    if( !f_is_zero( r - r_final ) && !warn_flag ){
-        warn_flag = true ;
-        pr_warning( string( "error decected @ cpu-float-kernel, failed " ) + 
-                  string( typeid( T ).name() ) + string( " math operations" ) ) ;
-    }
-}
- 
-static void float_ops_kernel(){
-// #if (_GLIBCXX_USE_FLOAT128)
-//         float_ops_ikernel<__float128>( 0 , __builtin_sin , __builtin_cos ) ;
-// #endif
-    float_ops_ikernel<__long_double_t>( -2.0687397322345 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<float_t>( (float)-2.88806390762329 , __builtin_sin , __builtin_cos ) ;
-}
-
-void cpu_float_bench( int32_t thrid , bench_args_t args ){
+void cpu_l1i_bench( int32_t thrid , bench_args_t args ){
     char infobuf[1024] ;
 
     // Calculate load parameters 
     double md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
-    int measure_rounds = 5000 ;
+    int measure_rounds = 500 ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
-        float_ops_kernel() ;
+        cpu_l1i_kernel() ;
     }
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
@@ -104,7 +43,7 @@ void cpu_float_bench( int32_t thrid , bench_args_t args ){
         measure_rounds = module_runrounds ;
         md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
         for( int i = 0 ; i < measure_rounds ; i ++ ){
-            float_ops_kernel() ;
+            cpu_l1i_kernel() ;
         }
         md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
         actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
@@ -159,7 +98,7 @@ void cpu_float_bench( int32_t thrid , bench_args_t args ){
     pr_info( infobuf ) ;
 }
 
-int32_t cpu_float_bench_entry( bench_args_t args ){
+int32_t cpu_l1i_bench_entry( bench_args_t args ){
     int count_thr = args.threads ;
     if( get_arg_flag( args.flags , FLAG_IS_CHECK ) || get_arg_flag( args.flags , FLAG_PRINT_DEBUG_INFO ) ){
         args.print_argsinfo() ;
@@ -168,7 +107,7 @@ int32_t cpu_float_bench_entry( bench_args_t args ){
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
     for( int i = 0 ; i < count_thr ; i ++ ){
-        thrs[i] = thread( cpu_float_bench , i + 1 , args ) ;
+        thrs[i] = thread( cpu_l1i_bench , i + 1 , args ) ;
     }
     if( get_arg_flag( args.flags , FLAG_IS_RUN_PARALLEL ) ){
         for( auto &thr : thrs ){
@@ -182,4 +121,7 @@ int32_t cpu_float_bench_entry( bench_args_t args ){
     return 0 ;
 }
 
-#undef float_thresh
+#undef C1
+#undef C2
+#undef C3
+#undef CAST_TO_UINT128

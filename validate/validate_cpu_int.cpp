@@ -141,40 +141,40 @@ void expand1(){
 int main(){
     time_t st , ed ;
     while( true ){
-        // st = clock() ;
-        // expand1() ;
-        // ed = clock() ;
-        // printf( "expand1 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand1() ;
+        ed = clock() ;
+        printf( "expand1 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand2() ;
-        // ed = clock() ;
-        // printf( "expand2 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand2() ;
+        ed = clock() ;
+        printf( "expand2 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand3() ;
-        // ed = clock() ;
-        // printf( "expand3 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand3() ;
+        ed = clock() ;
+        printf( "expand3 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand4() ;
-        // ed = clock() ;
-        // printf( "expand4 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand4() ;
+        ed = clock() ;
+        printf( "expand4 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand5() ;
-        // ed = clock() ;
-        // printf( "expand5 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand5() ;
+        ed = clock() ;
+        printf( "expand5 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand6() ;
-        // ed = clock() ;
-        // printf( "expand6 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand6() ;
+        ed = clock() ;
+        printf( "expand6 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
-        // st = clock() ;
-        // expand7() ;
-        // ed = clock() ;
-        // printf( "expand7 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
+        st = clock() ;
+        expand7() ;
+        ed = clock() ;
+        printf( "expand7 : %.2f\n" , 1.0 * ( ed - st ) / CLOCKS_PER_SEC ) ;
 
         st = clock() ;
         expand8() ;

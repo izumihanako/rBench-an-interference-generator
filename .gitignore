@@ -3,6 +3,7 @@
 .interrupts
 .gdbinit
 *.txt
+*.asm
 icmp
 
 

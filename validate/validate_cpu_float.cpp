@@ -23,7 +23,7 @@ void expand8(){
         z -= z - w ;
         a -= a - w ;
         b -= b - w ;
-        c -= c - w ;
+        c -= c - w ; // c = c - ( c - w )  -->  c = w 
         d -= d - w ;
         w = w + 1 ;
     }
