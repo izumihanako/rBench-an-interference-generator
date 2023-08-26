@@ -1,0 +1,33 @@
+#include <iostream>
+#include <string>
+#include "udpsocket.hpp"
+using namespace std;
+
+#define CHECK_RET(q) if((q)==false){return -1;}
+int main( int argc, char *argv[] ) {
+	if (argc != 3) {
+		cout << "Usage: ./udpcli ip port\n";
+		return -1;
+	}
+	string srv_ip = argv[1];
+	uint16_t srv_port = stoi(argv[2]);
+
+	UdpSocket cli_sock;
+	//创建套接字
+	CHECK_RET( cli_sock.Socket() );
+	//绑定数据(不推荐)
+	while(1) {
+		//发送数据
+		cout << "client say:";
+		string buf ;
+		cin >> buf ;
+		CHECK_RET( cli_sock.Send(buf, srv_ip, srv_port) ) ;
+		//接收数据
+		buf.clear() ;
+		CHECK_RET( cli_sock.Recv(&buf) ) ;
+		cout << "server say: " << buf << endl;
+	}
+	//关闭套接字
+	cli_sock.Close();
+	return 0;
+}
