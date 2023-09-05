@@ -16,15 +16,10 @@ int main( int argc, char *argv[] ) {
 	//创建套接字
 	CHECK_RET( cli_sock.Socket() );
 	//绑定数据(不推荐)
+    char *buf = new char[4096] ;
+	CHECK_RET( cli_sock.Send(buf , 20 , srv_ip, srv_port) ) ;
 	while(1) {
-		//发送数据
-		cout << "client say:";
-		string buf ;
-		cin >> buf ;
-		CHECK_RET( cli_sock.Send(buf, srv_ip, srv_port) ) ;
-		//接收数据
-		buf.clear() ;
-		CHECK_RET( cli_sock.Recv(&buf) ) ;
+		CHECK_RET( cli_sock.Recv( buf ) ) ;
 		cout << "server say: " << buf << endl;
 	}
 	//关闭套接字

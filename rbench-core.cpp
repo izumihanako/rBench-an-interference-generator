@@ -210,7 +210,7 @@ void strength_to_time( const double sgl_round_time , const double sgl_idle_time 
     return ;
 }
 
-#define FULL_MEMBW_MODULE_ROUND 200
+#define FULL_MEMBW_MODULE_ROUND 100
 void membw_to_time( const uint64_t bytes , const uint64_t aim_bw ,
                     const double sgl_round_time , const double sgl_idle_time , 
                     const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){

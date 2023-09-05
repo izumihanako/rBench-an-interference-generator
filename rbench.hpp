@@ -61,7 +61,7 @@ struct bench_args_t{
     uint32_t flags ;
     uint32_t period ; // us 
     union{
-        uint64_t mem_bandwidth ; // bytes 
+        int64_t mem_bandwidth ; // bytes 
         uint64_t cache_size ;    // bytes 
         uint64_t tlb_page_tot ;  // Larger than the sum of page sizes that tlb can cache
     } ;

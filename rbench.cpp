@@ -230,6 +230,12 @@ void parse_opts( int argc , char **argv ){
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-float" ) ;
                 pargs->limit_round = ONE_THOUSAND * 20 ;
+                // cacheL1i speed
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "cpu-l1i" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "cpu-l1i" ) ;
+                pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
+                pargs->limit_round = ONE_THOUSAND * 100 ;
                 // cacheL1 speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL1" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
@@ -255,6 +261,11 @@ void parse_opts( int argc , char **argv ){
                 pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
                 pargs->limit_round = ONE_THOUSAND * 10  ;
                 // break 
+                bench_tasks.emplace_back( (*bench_funcs.find( string( "mem-bw" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "mem-bw" ) ;
+                pargs->limit_round = ONE_THOUSAND * 50 ;
+                pargs->mem_bandwidth = 0 ; // unlimited
                 break ;
             }
             case OPT_debug :{

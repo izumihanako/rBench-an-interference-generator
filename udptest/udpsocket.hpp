@@ -8,7 +8,21 @@
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 using namespace std;
+
+double timeval_to_double( const struct timeval *tv ) {
+    return (double)tv->tv_sec + ( (double)tv->tv_usec * 1e-6 ) ;
+}
+
+double time_now() {
+    timeval now;
+    if ( gettimeofday( &now, NULL ) < 0 ){
+        return -1.0 ;
+    }
+    return timeval_to_double( &now ) ;
+}
+
 
 int stress_net_interface_exists(const char *interface, const int domain, struct sockaddr *addr) {
 	struct ifaddrs *ifaddr, *ifa;
@@ -45,7 +59,7 @@ class UdpSocket
 		UdpSocket() :_sockfd(-1) {}
 		//创建套接字
 		bool Socket() {
-			_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+			_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP );
 			if (_sockfd < 0) {
 				perror("socket error");
 				return false;
@@ -74,7 +88,7 @@ class UdpSocket
 			return true;
 		}
 		//接收数据，获取发送端地址信息
-		bool Recv(string *buf, string *ip = NULL, uint16_t *port = NULL ) {
+		bool Recv(char *buf, string *ip = NULL, uint16_t *port = NULL ) {
 			struct sockaddr_in peer_addr;//用于接收发送端的地址信息
 			socklen_t len = sizeof(struct sockaddr_in);
 			char tmp[4096] = {0};
@@ -83,7 +97,7 @@ class UdpSocket
 				perror("recvfrom error");
 				return false;
 			}
-			buf->assign(tmp, ret);//assign从指定字符串中截取指定长度的数据到buf中
+			memcpy( buf , tmp , sizeof( char ) * ret ) ;
 			if (port != NULL) {
 				*port = ntohs(peer_addr.sin_port);//网络字节序到主机字节序的转换
 			}
@@ -93,26 +107,24 @@ class UdpSocket
 			return true;
 		}
 		//发送数据
-		bool Send(const string &data, string &ip, const uint16_t port)
+		bool Send(const char* data, int data_len , string &ip, const uint16_t port)
 		{
 			struct sockaddr_in addr;
 			addr.sin_family = AF_INET;
 			addr.sin_port = htons(port);
 			addr.sin_addr.s_addr = inet_addr(ip.c_str());
 			socklen_t len = sizeof(struct sockaddr_in);
-			int ret = sendto(_sockfd, data.c_str(), data.size(), 0, (struct sockaddr*)&addr, len);
+			int ret = sendto(_sockfd, data , data_len , 0, (struct sockaddr*)&addr, len);
 			if (ret < 0)
 			{
-				perror("sendto error");
+				printf("sendto error\n");
 				return false;
 			}
 			return true;
 		}
 		//关闭套接字
-		bool Close()
-		{
-			if (_sockfd > 0)
-			{
+		bool Close() {
+			if (_sockfd > 0) {
 				close(_sockfd);
 				_sockfd = -1;
 			}
