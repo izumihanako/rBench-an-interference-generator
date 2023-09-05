@@ -12,17 +12,19 @@ static const help_info_t help_entrys[] = {
     { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N (bytes)" } ,
     { NULL           , "check"          , NULL         , "(global) Run preset system check tasks. If this option is present, all other options will be ignored" } ,
     { NULL           , "debug"          , NULL         , "(global) Output debug information" } ,
-    { "l"            , "limited=N"      , NULL         , "(stressor) If limited, benchmark will stop after N rounds. Must have \"=\" !!!" } ,
-    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, Set mem-bandwidth to W MB/s for every instance" },
-    { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of benchmark" } ,
+    { "l"            , "limited=N"      , NULL         , "(stressor) If limited, the stressor will stop after N rounds. Must have \"=\" !!!" } ,
+    { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, set mem-bandwidth to W MB/s for every instance" } ,
+    { NULL           , "pack-per-sec N" , "pps N"      , "(stressor) For network related stressors, set the network pack sending rate to N pps" } ,
+    { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of stressors" } ,
     { NULL           , "no-warn"        , NULL         , "(global) Do not print warning information" } ,
-    { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), Make sure that this parameter is greater than the total memory size that tlb can cache"} ,
-    { NULL           , "parallel"       , NULL         , "(global, beta) Run in parallel mode"} ,
+    { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), MAKE SURE that this parameter is greater than the total memory size that tlb can cache"} ,
+    { NULL           , "parallel"       , NULL         , "(global, alpha) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
-    { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified benchmark. Supported test items are cacheL1, cacheL2, "
+    { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified stressor. Supported test items are cacheL1, cacheL2, "
                                                          "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, tlb, mem-bw"    } ,
-    { "s P"          , "strength N"     , NULL         , "(stressor) Set load strength to P% for every instance (run P% time per time granularity)" } ,
-    { "t N"          , "time N"         , NULL         , "(stressor) If specified, benchmark will stop after N seconds" } ,
+    { "s P"          , "strength N"     , NULL         , "(stressor) Set stressors' load strength to P% for every instance (run P% time per time granularity)."
+                                                         "Not valid for mem-bw, network related stressors, ..." } ,
+    { "t N"          , "time N"         , NULL         , "(stressor) If specified, the stressor will stop after N seconds" } ,
     { NULL           , NULL             , NULL         , NULL }
 } ;
 
@@ -54,8 +56,20 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-l1i" , &cpu_l1i_bench_entry ) ,
-    pair< string , bench_func_t >( "tlb" , &tlb_bench_entry ) ,
-    pair< string , bench_func_t >( "mem-bw" , &mem_bw_bench_entry ) ,
+    pair< string , bench_func_t >( "tlb"     , &tlb_bench_entry ) ,
+    pair< string , bench_func_t >( "mem-bw"  , &mem_bw_bench_entry ) ,
+} ;
+
+static const map<string , int64_t > bench_funcs_limited_default = {
+    pair< string , int64_t >( "cache"   , ONE_THOUSAND * 100 ) ,
+    pair< string , int64_t >( "cacheL1" , ONE_THOUSAND * 100 ) ,
+    pair< string , int64_t >( "cacheL2" , ONE_THOUSAND * 100 ) ,
+    pair< string , int64_t >( "cacheL3" , ONE_THOUSAND * 100 ) ,
+    pair< string , int64_t >( "cpu-int" , ONE_THOUSAND *  20 ) ,
+    pair< string , int64_t >( "cpu-float",ONE_THOUSAND *  20 ) ,
+    pair< string , int64_t >( "cpu-l1i" , ONE_THOUSAND *  10 ) ,
+    pair< string , int64_t >( "tlb"     , ONE_THOUSAND *  10 ) ,
+    pair< string , int64_t >( "mem-bw"  , ONE_THOUSAND *  50 ) ,
 } ;
 
 struct bench_task_t{
@@ -131,7 +145,7 @@ void parse_opts( int argc , char **argv ){
         switch( c ){
             case OPT_limited:{
                 set_arg_flag( pargs->flags , FLAG_IS_LIMITED ) ;
-                if( !optarg ) pargs->limit_round = 100 ;
+                if( !optarg ) pargs->limit_round = ( *bench_funcs_limited_default.find( pargs->bench_name ) ).second ;
                 else {
                     int64_t i64 = atoll( optarg ) ;
                     pargs->limit_round = i64 ;
@@ -224,48 +238,43 @@ void parse_opts( int argc , char **argv ){
                 bench_tasks.emplace_back(  (*bench_funcs.find( string( "cpu-int" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-int" ) ;
-                pargs->limit_round = ONE_THOUSAND * 20 ;
                 // float speed
                 bench_tasks.emplace_back(  (*bench_funcs.find( string( "cpu-float" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-float" ) ;
-                pargs->limit_round = ONE_THOUSAND * 20 ;
                 // cacheL1i speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cpu-l1i" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-l1i" ) ;
                 pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
-                pargs->limit_round = ONE_THOUSAND * 100 ;
                 // cacheL1 speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL1" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cacheL1" ) ;
                 pargs->cache_size = cpuinfo.get_data_cache_size_level( 1 ) ;
-                pargs->limit_round = ONE_THOUSAND * 100 ;
                 // cacheL2 speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL2" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cacheL2" ) ;
                 pargs->cache_size = cpuinfo.get_data_cache_size_level( 2 ) ;
-                pargs->limit_round = ONE_THOUSAND * 100  ;
                 // cacheL3 speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cacheL3" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cacheL3" ) ;
                 pargs->cache_size = cpuinfo.get_data_cache_size_level( 3 ) ;
-                pargs->limit_round = ONE_THOUSAND * 100  ;
                 // tlb speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "tlb" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "tlb" ) ;
                 pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
-                pargs->limit_round = ONE_THOUSAND * 10  ;
-                // break 
+                // membw speed 
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "mem-bw" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "mem-bw" ) ;
-                pargs->limit_round = ONE_THOUSAND * 50 ;
-                pargs->mem_bandwidth = 0 ; // unlimited
+                // general settings
+                for( bench_task_t &bench_task : bench_tasks ){
+                    bench_task.args.limit_round = ( *bench_funcs_limited_default.find( bench_task.args.bench_name ) ).second ;
+                }
                 break ;
             }
             case OPT_debug :{

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-int loopcount = 2000 ;
+int loopcount = 3000 ;
 int roundtime = 1 ;
 
 void printhead(){

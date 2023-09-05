@@ -19,7 +19,8 @@ endif
 
 # Header files
 HEADERS = \
-	rbench.hpp
+	rbench.hpp \
+	core-net.hpp 
 
 #  Source of interferences(SOI) source file
 SOI_SRC = \
@@ -30,12 +31,14 @@ SOI_SRC = \
 	rbench-cpu-float.cpp \
 	rbench-cpu-tlb.cpp \
 	rbench-cpu-l1i.cpp \
-	rbench-mem-bw.cpp
+	rbench-mem-bw.cpp \
+	rbench-udp.cpp 
 
 # Source of interferences(SOI) core file
 CORE_SRC = \
 	core-mwc.cpp \
-	core-lfsr.cpp 
+	core-lfsr.cpp \
+	core-net.cpp 
 
 SRC = $(CORE_SRC) $(SOI_SRC)
 OBJS = $(SRC:.cpp=.o) rbench-cpu-l1i-kernel.o
@@ -52,7 +55,7 @@ rbench-cpu-l1i-kernel.o : rbench-cpu-l1igen.cpp
 	./rbench-cpu-l1igen.exe > rbench-cpu-l1i-kernel.asm
 	$(AS) -c rbench-cpu-l1i-kernel.asm -o $@ 
 
-%.o : %.cpp
+%.o : %.cpp $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 rbench: $(OBJS)
