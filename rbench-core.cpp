@@ -126,8 +126,7 @@ void cpuinfo_t::read_cpuinfo(){
 		}
     }
 	if( cache_count == 0 ){
-		printf( "warning:\n") ;
-		printf( "  attempt to read cache info, but found no cache" );
+		pr_warning( "attempt to read cache info, but found no cache" );
 	}
 	return ;
 }
@@ -146,6 +145,11 @@ void bench_args_t::print_argsinfo() {
         printf( "time unlimited, " ) ;
     }
     printf( "size(bw) = %llu\n" , (unsigned long long) cache_size ) ;
+    printf( "%-4snetwork info: from %s:%hu to %s:%hu\n" , "" ,
+        netaddr.ip.c_str() , netaddr.port , to_addr.ip.c_str() , to_addr.port ) ;
+    if( netaddr.port != 0 ){
+        printf( "%-8s--> pps = %d , psize = %d\n" , "" , network_pps , network_psize ) ;
+    }
 }
 
 uint64_t cpuinfo_t::get_data_cache_size_level( uint32_t lev ){
@@ -181,7 +185,6 @@ void cpuinfo_t::print_cpuinfo() {
     }
 }
 
-#define FULL_STRENGTH100_MODULE_ROUND 100
 void strength_to_time( const double sgl_round_time , const double sgl_idle_time , const uint32_t strength_ , 
                        const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
     if( strength_ == 100 ){
@@ -210,7 +213,6 @@ void strength_to_time( const double sgl_round_time , const double sgl_idle_time 
     return ;
 }
 
-#define FULL_MEMBW_MODULE_ROUND 100
 void membw_to_time( const uint64_t bytes , const uint64_t aim_bw ,
                     const double sgl_round_time , const double sgl_idle_time , 
                     const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
@@ -229,6 +231,30 @@ void membw_to_time( const uint64_t bytes , const uint64_t aim_bw ,
         ratio = round(x) / x ;
         if( x < 0 || std::isnan( x ) ){
             x = FULL_MEMBW_MODULE_ROUND , y = 0 ;
+        }
+        module_runround = (int32_t)round( x ) ;
+        module_sleepus = (int32_t)round( y * ratio ) ;
+    }
+}
+
+void network_pps_to_time( const double roundpps , const int32_t aim_pps ,
+                    const double sgl_round_time , const double sgl_idle_time , 
+                    const uint32_t period , int32_t& module_runround , int32_t &module_sleepus ){
+    double full_pps = (double) roundpps / sgl_round_time ;
+    double eq_strength_percent = (double) aim_pps / full_pps * 100 ;
+    if( aim_pps <= 0 || eq_strength_percent >= 100 ){
+        module_runround = FULL_NETWORK_PPS_MODULE_ROUND ;
+        module_sleepus = 0 ;
+    } else {
+        double p = eq_strength_percent / 100.0 ;
+        double y = ( 1 - p ) * period ; // let y = ( 1 - p ) * period
+        double x = y * p / ( ( sgl_round_time - p * sgl_round_time - p * sgl_idle_time ) * ONE_MILLION ) ;
+        double x_time = x * ( sgl_round_time + sgl_idle_time ) * ONE_MILLION ;
+        double ratio = period / ( x_time + y ) ;
+        y *= ratio , x *= ratio ;
+        ratio = round(x) / x ;
+        if( x < 0 || std::isnan( x ) ){
+            x = FULL_NETWORK_PPS_MODULE_ROUND , y = 0 ;
         }
         module_runround = (int32_t)round( x ) ;
         module_sleepus = (int32_t)round( y * ratio ) ;
@@ -259,7 +285,7 @@ void pr_info( string info ){
     global_pr_mtx.unlock() ;
 }
 
-void pr_info( char* info ){
+void pr_info( const char* info ){
     global_pr_mtx.lock() ;
     printf( "Info: %s\n" , info ) ;
     global_pr_mtx.unlock() ;
@@ -273,7 +299,7 @@ void pr_warning( string info ){
     global_pr_mtx.unlock() ;
 }
 
-void pr_warning( char* info ){
+void pr_warning( const char* info ){
     if( get_arg_flag( global_flag , FLAG_NO_WARN ) == 1 )
         return ;
     global_pr_mtx.lock() ;
@@ -287,7 +313,7 @@ void pr_error( string info ){
     global_pr_mtx.unlock() ;
 }
 
-void pr_error( char* info ){
+void pr_error( const char* info ){
     global_pr_mtx.lock() ;
     printf( "Error: %s\n" , info ) ;
     global_pr_mtx.unlock() ;
@@ -301,7 +327,7 @@ void pr_debug( string info ){
     global_pr_mtx.unlock() ;
 }
 
-void pr_debug( char* info ){
+void pr_debug( const char* info ){
     if( get_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) == 0 )
         return ;
     global_pr_mtx.lock() ;

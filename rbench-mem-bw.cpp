@@ -114,11 +114,11 @@ static void mem_bw_bench_module( int32_t thrid , bench_args_t args , uint64_t ar
                 args.bench_name.c_str() , thrid , sgl_time * ONE_MILLION , actl_membw / MB , sum_runtimeus, sum_sleepus , sum_runidleus ) ;
             pr_debug( infobuf ) ;
             // re-calculate load parameters
-            if( args.mem_bandwidth - MEMBW_CONTROL_LBOUND > actl_membw || 
-                args.mem_bandwidth + MEMBW_CONTROL_RBOUND < actl_membw ){
+            if( (double) args.mem_bandwidth - MEMBW_CONTROL_LBOUND > actl_membw || 
+                (double) args.mem_bandwidth + MEMBW_CONTROL_RBOUND < actl_membw ){
                 membw_to_time( BYTES_ADD_KERNEL , args.mem_bandwidth , sgl_time , sgl_idle , args.period , module_runrounds , module_sleepus ) ;
             }
-            if( (int64_t)( args.mem_bandwidth - 100 * MB ) > actl_membw ){
+            if( (double) args.mem_bandwidth - 2 * MEMBW_CONTROL_LBOUND > actl_membw ){
                 if( ++low_actl_membw_warning > 8 ){
                     sprintf( infobuf , "LOW MEM_BW - %s( thread %d ): current %.1fMB/s, target %.1fMB/s, adjusting..." , 
                         args.bench_name.c_str() , thrid , actl_membw / MB , (double)args.mem_bandwidth / MB ) ;

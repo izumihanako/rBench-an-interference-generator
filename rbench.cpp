@@ -9,15 +9,19 @@ int32_t glob_thr_cnt ;
 
 // help options
 static const help_info_t help_entrys[] = {
+    { NULL           , "addr ip:port"   , NULL         , "(stressor, network) For network related stressors, set the ip:port for local program" } ,
+    { NULL           , "addr-to ip:port", "to-addr ip:port" , "(stressor, network) For network related stressors, specify the target machine's ip:port" } ,
+    { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N (bytes)" } ,
     { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N (bytes)" } ,
     { NULL           , "check"          , NULL         , "(global) Run preset system check tasks. If this option is present, all other options will be ignored" } ,
     { NULL           , "debug"          , NULL         , "(global) Output debug information" } ,
     { "l"            , "limited=N"      , NULL         , "(stressor) If limited, the stressor will stop after N rounds. Must have \"=\" !!!" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, set mem-bandwidth to W MB/s for every instance" } ,
-    { NULL           , "pack-per-sec N" , "pps N"      , "(stressor) For network related stressors, set the network pack sending rate to N pps" } ,
     { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of stressors" } ,
     { NULL           , "no-warn"        , NULL         , "(global) Do not print warning information" } ,
     { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), MAKE SURE that this parameter is greater than the total memory size that tlb can cache"} ,
+    { NULL           , "pack-per-sec N" , "pps N"      , "(stressor, network) For network related stressors, set the network pack sending rate to N pps" } ,
+    { NULL           , "pack-size N"    , "psize N"    , "(stressor, network) For network related stressors, set the network pack size to N bytes" } ,
     { NULL           , "parallel"       , NULL         , "(global, alpha) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified stressor. Supported test items are cacheL1, cacheL2, "
@@ -38,11 +42,18 @@ static const struct option long_options[] = {
     { "run"           , required_argument , 0 , OPT_run           } ,
     { "strength"      , required_argument , 0 , OPT_strength      } ,
     { "time"          , required_argument , 0 , OPT_time          } ,
+    { "addr"          , required_argument , 0 , OPT_addr          } ,
+    { "addr-to"       , required_argument , 0 , OPT_addr_to       } ,
+    { "to-addr"       , required_argument , 0 , OPT_addr_to       } ,
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
     { "no-warn"       , no_argument       , 0 , OPT_no_warn       } ,
     { "page-tot"      , required_argument , 0 , OPT_page_tot      } ,
+    { "pack-per-sec"  , required_argument , 0 , OPT_pack_per_sec  } ,
+    { "pps"           , required_argument , 0 , OPT_pack_per_sec  } ,
+    { "pack-size"     , required_argument , 0 , OPT_pack_size     } ,
+    { "psize"         , required_argument , 0 , OPT_pack_size     } ,
     { "parallel"      , no_argument       , 0 , OPT_parallel      } ,
     { "period"        , required_argument , 0 , OPT_period        } ,
     { 0               , 0                 , 0 , 0                 }
@@ -58,6 +69,8 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cpu-l1i" , &cpu_l1i_bench_entry ) ,
     pair< string , bench_func_t >( "tlb"     , &tlb_bench_entry ) ,
     pair< string , bench_func_t >( "mem-bw"  , &mem_bw_bench_entry ) ,
+    pair< string , bench_func_t >( "udp-server" , &udp_server_bench_entry ) ,
+    pair< string , bench_func_t >( "udp-client" , &udp_client_bench_entry ) ,
 } ;
 
 static const map<string , int64_t > bench_funcs_limited_default = {
@@ -191,6 +204,12 @@ void parse_opts( int argc , char **argv ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 2 ) ;
                     } else if( !strncasecmp( optarg , "cacheL3" , 7 ) ){
                         pargs->cache_size = cpuinfo.get_data_cache_size_level( 3 ) ;
+                    } else if( !strncasecmp( optarg , "udp-server" , 10 ) ){
+                        pargs->network_pps = 0 ; // unlimited 
+                        pargs->network_psize = 64 ; // byte 
+                    } else if( !strncasecmp( optarg , "udp-client" , 10 ) ){
+                        pargs->network_pps = 0 ; // unlimited 
+                        pargs->network_psize = 64 ; // byte    
                     }
                 } else {
                     string warnstr = string( "no such benchmark named " ) + string( optarg ) ;
@@ -211,6 +230,10 @@ void parse_opts( int argc , char **argv ){
                     sprintf( infobuf , "strength setting are not valid for mem bandwidth stressor, ignored" ) ;
                     pr_warning( infobuf ) ;
                     break ;
+                } else if( !strncasecmp( pargs->bench_name.c_str() , "udp_" , 4 ) ){
+                    sprintf( infobuf , "strength setting are not valid for network stressors, ignored" ) ;
+                    pr_warning( infobuf ) ;
+                    break ;
                 }
                 pargs->strength = (uint8_t) i32 ;
                 break ;
@@ -226,6 +249,40 @@ void parse_opts( int argc , char **argv ){
                 break ;
             }
             // long options :
+            case OPT_addr :{
+                char* colon_pos = strchr( optarg , ':' ) ;
+                if( colon_pos != nullptr ){
+                    char* check_pos = strchr( (char*)( colon_pos + 1 ) , ':' ) ;
+                    if( check_pos != nullptr ){
+                        sprintf( infobuf , "Find multiple colon. The input format is \"ip:port\" without quote" ) ;
+                        pr_warning( infobuf ) ;
+                        break ;
+                    }
+                    pargs->netaddr.ip = string( optarg ).substr( 0 , colon_pos - optarg ) ;
+                    pargs->netaddr.port = (unsigned short)atoi( (char*)( colon_pos + 1 ) ) ;
+                } else {
+                    sprintf( infobuf , "Cannot find :port. The input format is \"ip:port\" without quote" ) ;
+                    pr_warning( infobuf ) ;
+                }
+                break ;
+            }
+            case OPT_addr_to :{
+                char* colon_pos = strchr( optarg , ':' ) ;
+                if( colon_pos != nullptr ){
+                    char* check_pos = strchr( (char*)( colon_pos + 1 ) , ':' ) ;
+                    if( check_pos != nullptr ){
+                        sprintf( infobuf , "Find multiple colon. The input format is \"ip:port\" without quote" ) ;
+                        pr_warning( infobuf ) ;
+                        break ;
+                    }
+                    pargs->to_addr.ip = string( optarg ).substr( 0 , colon_pos - optarg ) ;
+                    pargs->to_addr.port = (unsigned short)atoi( (char*)( colon_pos + 1 ) ) ;
+                } else {
+                    sprintf( infobuf , "Cannot find :port. The input format is \"ip:port\" without quote" ) ;
+                    pr_warning( infobuf ) ;
+                }
+                break ;
+            }
             case OPT_cache_size :{
                 uint32_t cache_size = atoi( optarg ) ;
                 pargs->cache_size = cache_size ;
@@ -295,6 +352,26 @@ void parse_opts( int argc , char **argv ){
                 pargs->tlb_page_tot = i64 ;
                 break ;
             }
+            case OPT_pack_size :{
+                int32_t i32 = atoi( optarg ) ;
+                if( i32 <= 0 ){
+                    sprintf( infobuf , "pack size (%d) needs to be a positive number, ignored" , i32 ) ;
+                    pr_warning( infobuf ) ;
+                    break ;
+                }
+                pargs->network_psize = i32 ;
+                break ;
+            }
+            case OPT_pack_per_sec :{
+                int32_t i32 = atoi( optarg ) ;
+                if( i32 <= 0 ){
+                    sprintf( infobuf , "pps (%d) needs to be a positive number, ignored" , i32 ) ;
+                    pr_warning( infobuf ) ;
+                    break ;
+                }
+                pargs->network_pps = i32 ;
+                break ;
+            }
             case OPT_parallel :{
                 set_arg_flag( global_flag , FLAG_IS_RUN_PARALLEL ) ;
                 break ;
@@ -309,7 +386,7 @@ void parse_opts( int argc , char **argv ){
                 break ;
             }
             default :{
-                pr_error( string( "Unknown argument" ) ) ;
+                pr_error( string( "Unknown argument, or no implements" ) ) ;
                 break ;
             }
         }

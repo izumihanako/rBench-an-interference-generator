@@ -32,10 +32,25 @@ int __net_interface_exists(const char* interface , const int domain , sockaddr* 
 	return ret;
 }
 
-bool UdpSocket::Socket() {
-    _sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP );
+void net_set_headfoot_checksum( char* buf , int32_t buflen ) {
+    if( buflen > 2 ) buf[0] = buf[buflen-1] ^ buf[1] ;
+    else buf[0] = buf[buflen-1] ;
+}
+
+bool net_check_headfoot_checksum( char* buf , int32_t buflen ){
+    if( buflen > 2 ) return buf[0] == ( buf[buflen-1] ^ buf[1] ) ;
+    else return buf[0] == buf[buflen-1] ;
+}
+
+bool UdpSocket::Socket( net_address_type_t _ip_type ) {
+    this->ip_type = _ip_type ;
+    if( ip_type == NET_ADDRESS_TYPE_IPV4 )      _sockfd = socket(AF_INET , SOCK_DGRAM, IPPROTO_UDP ) ;
+    else if( ip_type == NET_ADDRESS_TYPE_IPV6 ) _sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP ) ;
+    else {
+        pr_error( "Unknown IP type" ) ;
+        _sockfd = -1 ;
+    }
     if (_sockfd < 0) {
-        perror("socket error");
         return false;
     }
     return true;
@@ -54,22 +69,18 @@ bool UdpSocket::Bind( const string &ip , uint16_t port , const char* ifname ) {
     socklen_t len = sizeof(struct sockaddr_in);
     int ret = bind( _sockfd , (struct sockaddr*)&addr , len ) ;
     if (ret < 0) {
-        perror( "bind error" ) ;
         return false;
     }
     return true;    
 }
 
-bool UdpSocket::Recv(char* buf , string* ip , uint16_t* port ) {
+bool UdpSocket::Recv(char* buf , int32_t data_len , string* ip , uint16_t* port ) {
     sockaddr_in peer_addr ; //用于接收发送端的地址信息
     socklen_t len = sizeof(struct sockaddr_in);
-    char tmp[4096] = {0};
-    ssize_t ret = recvfrom( _sockfd, tmp, 4096, 0, (struct sockaddr*)&peer_addr , &len ) ;
+    ssize_t ret = recvfrom( _sockfd, buf , data_len, 0, (struct sockaddr*)&peer_addr , &len ) ;
     if (ret < 0) {
-        // pr_error("recvfrom error") ;
         return false;
     }
-    memcpy( buf , tmp , sizeof( char ) * ret ) ;
     if (port != NULL) {
         *port = ntohs( peer_addr.sin_port ) ; // 网络字节序到主机字节序的转换
     }
@@ -79,27 +90,43 @@ bool UdpSocket::Recv(char* buf , string* ip , uint16_t* port ) {
     return true;
 }
 
-bool UdpSocket::Send(const char* data, int data_len , string& ip, const uint16_t port)
-{
-    struct sockaddr_in addr;
+bool UdpSocket::Send( const char* data , int data_len , const sockaddr &addr ){
+    socklen_t len = sizeof( sockaddr ) ;
+    ssize_t ret = sendto( _sockfd , data , data_len , 0 , &addr , len ) ;
+    if( ret < 0 ){
+        return false ;
+    }
+    return true ;
+}
+
+bool UdpSocket::Send(const char* data, int data_len , const string& ip, const uint16_t port ) {
+    sockaddr_in addr ;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    socklen_t len = sizeof(struct sockaddr_in);
-    ssize_t ret = sendto(_sockfd, data , data_len , 0, (struct sockaddr*)&addr, len);
+    socklen_t len = sizeof(sockaddr_in);
+    ssize_t ret = sendto(_sockfd, data , data_len , 0, (sockaddr*)&addr, len);
     if (ret < 0) {
-        // pr_error( "sendto error\n" ) ;
         return false;
     }
     return true;
 }
 
+// return true if socket exists
+bool UdpSocket::ExistsSocket() const {
+    return _sockfd > 0 ;
+}
+
 bool UdpSocket::Close() {
-    if (_sockfd > 0) {
+    if ( ExistsSocket() ) {
         close(_sockfd);
         _sockfd = -1;
     }
     return true;
+}
+
+UdpSocket::~UdpSocket(){
+    (void)( this->Close() ) ;
 }
 
 #endif

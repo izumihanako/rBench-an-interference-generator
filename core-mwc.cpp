@@ -188,3 +188,14 @@ uint64_t OPTIMIZE3 mwc_t::mwc64modn( const uint64_t mmod ){
     } while( val >= threshold ) ;
     return val % mmod ;
 }
+
+// fill the giving memory with random number 
+void OPTIMIZE3 mwc_t::fill_array( void* p , int32_t len ){
+    int __lessthan4 = len % 4 ;
+    for( register int i = 0 ; i < len ; i += 4 ){
+        *((int*)p) = mwc32() ;
+    }
+    for( register int i = 0 ; i < __lessthan4 ; i ++ ){
+        *((char*)p+len-1-i) = mwc8() ;
+    }
+}

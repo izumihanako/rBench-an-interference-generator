@@ -3,10 +3,10 @@
 
 #include <algorithm>
 #include <argp.h>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <string>
 #include <cstring>
 #include <cstdint>
 #include <ctime>
@@ -15,13 +15,17 @@
 #include <fstream>
 #include <getopt.h>
 #include <ifaddrs.h>
+#include <iomanip>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <sched.h>
+#include <setjmp.h>
 #include <sstream>
+#include <string>
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
@@ -55,6 +59,28 @@ struct help_info_t{
     const char *description ;
 } ;
 
+#ifndef NET_ADDRESS_TYPE_DEF
+#define NET_ADDRESS_TYPE_DEF
+enum net_address_type_t {
+    NET_ADDRESS_TYPE_IPV4 = 4 ,
+    NET_ADDRESS_TYPE_IPV6 = 6 ,
+    NET_ADDRESS_TYPE_UNKNOWN = 255 ,
+} ;
+#endif
+
+// network address and port
+struct net_address_t{
+    string ip ;
+    uint16_t port ;
+    net_address_type_t ip_type ;
+    net_address_t(){
+        ip_type = NET_ADDRESS_TYPE_UNKNOWN ;
+    }
+    net_address_t( net_address_type_t _ip_type ){
+        ip_type = _ip_type ;
+    }
+} ;
+
 // arguments passed to every benchmarks
 // unified interface
 struct bench_args_t{
@@ -65,12 +91,22 @@ struct bench_args_t{
     int32_t time ;
     uint32_t flags ;
     uint32_t period ; // us 
+    net_address_t netaddr ;
+    net_address_t to_addr ;
     union{
         int64_t mem_bandwidth ; // bytes 
+        struct {
+            int32_t network_pps ;  // packs per second
+            int32_t network_psize ;// pack size
+        } ;
+        // int64_t network_pps ; // packs per second
         uint64_t cache_size ;    // bytes 
         uint64_t tlb_page_tot ;  // Larger than the sum of page sizes that tlb can cache
     } ;
     bench_args_t(){
+        to_addr.ip_type = netaddr.ip_type = NET_ADDRESS_TYPE_IPV4 ;
+        netaddr.ip = to_addr.ip = string( "0" ) ;
+        netaddr.port = to_addr.port = 0 ;
         threads = 1 ;
         limit_round = 0 ;
         time = 0 ;
@@ -112,11 +148,15 @@ enum argvopt_t{
     OPT_time           = 't' ,
     // long options only
     OPT_long_ops_start = 0x7f ,
+    OPT_addr ,
+    OPT_addr_to ,
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
     OPT_no_warn ,
     OPT_page_tot ,
+    OPT_pack_per_sec ,
+    OPT_pack_size ,
     OPT_parallel ,
     OPT_period ,
 } ;
@@ -197,6 +237,7 @@ struct mwc_t {
     uint8_t mwc8modn( const uint8_t mmod ) ;
     uint8_t mwc1() ;
     uint8_t mwc1modn( const uint8_t mmod ) ;
+    void fill_array( void* , int32_t ) ;
 } ;
 
 
@@ -240,6 +281,8 @@ struct mwc_t {
 #define PAGESIZEHUGE            2097152
 #define UNIVERSAL_CACHELINE     64
 #define DEFAULT_TLB_PAGE_TOT    (8*GB)
+// max network pack size
+#define NETWORK_MAX_PACK_SIZE   65536
 
 // alias_cast to avoid "dereferencing type-punned pointer will break strict-aliasing rules" warning
 template<typename T, typename F>
@@ -262,6 +305,7 @@ T alias_cast(F raw_data){
 // params: ( sgl_time , sgl_idle , strength , period , module_runrounds , module_sleepus )
 #define STRENGTH_CONTROL_LBOUND 0.5
 #define STRENGTH_CONTROL_RBOUND 0.5
+#define FULL_STRENGTH100_MODULE_ROUND 100
 void strength_to_time( const double , const double , const uint32_t , 
                        const uint32_t , int32_t& , int32_t& ) ;
 
@@ -271,9 +315,22 @@ void strength_to_time( const double , const double , const uint32_t ,
 // params: ( bytes , aimbw , sgl_time , sgl_idle , period , module_runrounds , module_sleepus )
 #define MEMBW_CONTROL_LBOUND (50*MB)
 #define MEMBW_CONTROL_RBOUND (50*MB)
+#define FULL_MEMBW_MODULE_ROUND 100
 void membw_to_time( const uint64_t , const uint64_t ,
                     const double , const double , 
                     const uint32_t , int32_t& , int32_t& ) ;
+
+// network stressor run time calculator
+// first translate pps to strength
+// then calculate as before 
+// params: ( pps , aimpps , sgl_time , sgl_idle , period , module_runrounds , module_sleepus )
+#define NETWORK_PPS_CONTROL_LBOUND 500
+#define NETWORK_PPS_CONTROL_RBOUND 500
+#define FULL_NETWORK_PPS_MODULE_ROUND 100
+void network_pps_to_time( const double , const int32_t ,
+                  const double , const double ,
+                  const uint32_t , int32_t& , int32_t& ) ;
+
 // useless
 // void try_precise_usleep( int32_t sleepus ) ;
 
@@ -284,18 +341,20 @@ int32_t cpu_float_bench_entry( bench_args_t ) ;
 int32_t tlb_bench_entry( bench_args_t ) ;
 int32_t mem_bw_bench_entry( bench_args_t ) ;
 int32_t cpu_l1i_bench_entry( bench_args_t ) ;
+int32_t udp_server_bench_entry( bench_args_t ) ;
+int32_t udp_client_bench_entry( bench_args_t ) ;
 
 
 // mutex print 
 extern mutex global_pr_mtx ;
 void pr_warning( string ) ;
-void pr_warning( char* ) ;
+void pr_warning( const char* ) ;
 void pr_error( string ) ;
-void pr_error( char* ) ;
+void pr_error( const char* ) ;
 void pr_info( string ) ;
-void pr_info( char* ) ;
+void pr_info( const char* ) ;
 void pr_debug( string ) ;
-void pr_debug( char* ) ;
+void pr_debug( const char* ) ;
 void pr_debug( void(* prfunc )() ) ;
 
 // mmap with retry
