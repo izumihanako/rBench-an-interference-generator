@@ -83,6 +83,8 @@ static const map<string , int64_t > bench_funcs_limited_default = {
     pair< string , int64_t >( "cpu-l1i" , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "tlb"     , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "mem-bw"  , ONE_THOUSAND *  50 ) ,
+    pair< string , int64_t >( "udp-client" , ONE_THOUSAND *  50 ) ,
+    pair< string , int64_t >( "udp-server" , ONE_BILLION ) ,
 } ;
 
 struct bench_task_t{

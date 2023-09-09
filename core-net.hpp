@@ -19,11 +19,12 @@ enum net_address_type_t {
 #endif
 
 enum net_thread_state_t {
-	NET_THREAD_WAIT  = -10 ,
-	NET_THREAD_READY = - 9 ,
-	NET_THREAD_ERROR = - 8 ,
-	NET_THREAD_FINISH = -1 ,
-	NET_THREAD_STATE_END = 0 ,
+	NET_THREAD_STATE_BEGIN = -100 ,
+	NET_THREAD_WAIT      = -10 ,
+	NET_THREAD_READY     = - 9 ,
+	NET_THREAD_ERROR     = - 8 ,
+	NET_THREAD_FINISH    = - 1 ,
+	NET_THREAD_STATE_END =   0 ,
 } ;
 
 int __net_interface_exists( const char* , const int , sockaddr* ) ;

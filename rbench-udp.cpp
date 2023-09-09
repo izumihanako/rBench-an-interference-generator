@@ -111,6 +111,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
     int measure_rounds = UDP_SEND_CALC_SPEED_ROUND_CNT ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
         udp_send_kernel( cli_thr_sock , srv_thraddr , sendbuf , sendlen ) ;
+        *pconn += UDP_SEND_KERNEL_PACK_PER_ROUND ;
     }
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
@@ -188,7 +189,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
     sprintf( infobuf , "%s( thread %d ): stopped after %.3f seconds, %ld rounds" , 
         args.bench_name.c_str() ,  thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
-    *pconn = NET_THREAD_FINISH ;
+    *pconn *= -1 ;
     delete[] sendbuf ;
 }
 
@@ -255,6 +256,7 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
     int measure_rounds = UDP_RECV_CALC_SPEED_ROUND_CNT ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
         udp_receive_kernel( srv_thr_sock , recvbuf , recvlen ) ;
+        *pconn += UDP_RECV_KERNEL_PACK_PER_ROUND ;
     }
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
@@ -332,7 +334,7 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
     sprintf( infobuf , "%s( thread %d ): stopped after %.3f seconds, %ld rounds" , 
         args.bench_name.c_str() ,  thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
-    *pconn = NET_THREAD_FINISH ;
+    *pconn *= -1 ;
 }
 
 // 0. both client and server create its own main socket
@@ -523,7 +525,7 @@ int32_t udp_server_bench_entry( bench_args_t args ){
         std::strftime( tmp , sizeof( tmp ) , "%F %T" , std::localtime( &curr_tm ) ) ;
         for( int i = 0 ; i < count_thr ; i ++ ) {
             if( conns[i] >= 0 ) nowpsum += conns[i] ;
-            else if( conns[i] != NET_THREAD_READY && conns[i] != NET_THREAD_WAIT )  cnt_norun ++ ;
+            else if( conns[i] < NET_THREAD_STATE_BEGIN ) cnt_norun ++ , nowpsum += -conns[i] ;
         }
         thistime = time_now() ;
         sprintf( infobuf , "%s, %s, real time speed: %.1fpps" , 
