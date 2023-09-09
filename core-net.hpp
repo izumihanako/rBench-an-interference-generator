@@ -40,6 +40,8 @@ class UdpSocket {
 		bool Recv(char* , int , std::string* = NULL , uint16_t* = NULL ) ;
 		bool Send(const char* , int , const sockaddr& ) ;
 		bool Send(const char* , int , const std::string& , const uint16_t ) ;
+		bool SetRecvTimeout( int32_t sec = 5 , int32_t usec = 0 ) ;
+		bool SetSendTimeout( int32_t sec = 5 , int32_t usec = 0 ) ;
 		bool Close() ; 
 		bool ExistsSocket() const ;
 	private:

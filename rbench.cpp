@@ -254,14 +254,14 @@ void parse_opts( int argc , char **argv ){
                 if( colon_pos != nullptr ){
                     char* check_pos = strchr( (char*)( colon_pos + 1 ) , ':' ) ;
                     if( check_pos != nullptr ){
-                        sprintf( infobuf , "Find multiple colon. The input format is \"ip:port\" without quote" ) ;
+                        sprintf( infobuf , "--addr: Find multiple colon. The input format is \"ip:port\" without quote" ) ;
                         pr_warning( infobuf ) ;
                         break ;
                     }
                     pargs->netaddr.ip = string( optarg ).substr( 0 , colon_pos - optarg ) ;
                     pargs->netaddr.port = (unsigned short)atoi( (char*)( colon_pos + 1 ) ) ;
                 } else {
-                    sprintf( infobuf , "Cannot find :port. The input format is \"ip:port\" without quote" ) ;
+                    sprintf( infobuf , "--addr: Cannot find :port. The input format is \"ip:port\" without quote" ) ;
                     pr_warning( infobuf ) ;
                 }
                 break ;
@@ -271,14 +271,14 @@ void parse_opts( int argc , char **argv ){
                 if( colon_pos != nullptr ){
                     char* check_pos = strchr( (char*)( colon_pos + 1 ) , ':' ) ;
                     if( check_pos != nullptr ){
-                        sprintf( infobuf , "Find multiple colon. The input format is \"ip:port\" without quote" ) ;
+                        sprintf( infobuf , "--addr-to: Find multiple colon. The input format is \"ip:port\" without quote" ) ;
                         pr_warning( infobuf ) ;
                         break ;
                     }
                     pargs->to_addr.ip = string( optarg ).substr( 0 , colon_pos - optarg ) ;
                     pargs->to_addr.port = (unsigned short)atoi( (char*)( colon_pos + 1 ) ) ;
                 } else {
-                    sprintf( infobuf , "Cannot find :port. The input format is \"ip:port\" without quote" ) ;
+                    sprintf( infobuf , "--addr-to: Cannot find :port. The input format is \"ip:port\" without quote" ) ;
                     pr_warning( infobuf ) ;
                 }
                 break ;

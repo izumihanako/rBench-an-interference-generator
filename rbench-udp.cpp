@@ -43,7 +43,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
     char infobuf[1024] ;
     
     int sendlen = args.network_psize ;
-    char* sendbuf = new char[sendlen] ;{ // random sending data
+    char* sendbuf = new char[sendlen] , recvbuf[TOUCH_INFO_SIZE];{ // random sending data
         mwc_t mwc_eng ;
         mwc_eng.reseed() ;
         mwc_eng.fill_array( sendbuf , sendlen ) ;
@@ -73,9 +73,32 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
             return ;      
         }
     }
+    cli_thr_sock.SetRecvTimeout( 6 , 0 ) ;
+
+    // client thr inform server thr its ip:address
+    if( !cli_thr_sock.Send( sendbuf , TOUCH_INFO_SIZE , srv_thraddr.ip , srv_thraddr.port ) ){
+        sprintf( infobuf , "%s( thread %d ): send pack for informing server_thr error.\n"
+                           "from %s:%hu(client thr) to %s:%hu(server thr)", args.bench_name.c_str() , thrid , 
+                           args.netaddr.ip.c_str() , args.netaddr.port , srv_thraddr.ip.c_str() , srv_thraddr.port ) ;
+        pr_error( infobuf ) ; 
+        *pconn = NET_THREAD_ERROR ;
+        return ;
+    }
     
-    while( round( *pconn ) != NET_THREAD_READY ){
-        usleep( ONE_THOUSAND * 10 ) ;
+    for( int i = 0 ; i < 10 ; i ++ ){
+        if( cli_thr_sock.Recv( recvbuf , TOUCH_INFO_SIZE , NULL , NULL ) ){
+            if( atoi( recvbuf ) == NET_THREAD_READY ){
+                *pconn = NET_THREAD_READY ;
+                break ;
+            }
+        }
+    }
+    if( *pconn != NET_THREAD_READY ){
+        sprintf( infobuf , "%s( thread %d ): Cannot receive NET_THREAD_READY from server_thr.\n"
+                           "This thread will exit now.", args.bench_name.c_str() , thrid ) ;
+        pr_error( infobuf ) ; 
+        *pconn = NET_THREAD_ERROR ;
+        return ;
     }
    
     // Calculate load parameters 
@@ -106,6 +129,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
         md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
         for( int i = 0 ; i < measure_rounds ; i ++ ){
             udp_send_kernel( cli_thr_sock , srv_thraddr , sendbuf , sendlen ) ;
+            *pconn += UDP_SEND_KERNEL_PACK_PER_ROUND ;
         }
         md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
         actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
@@ -202,8 +226,24 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
         return ;
     }
 
+    // server's new thread get client thread's ip:port
+    net_address_t cli_thr_addr ;
+    if( !srv_thr_sock.Recv( recvbuf , TOUCH_INFO_SIZE , &cli_thr_addr.ip , &cli_thr_addr.port ) ){
+        sprintf( infobuf , "%s( thread %d ): recv pack from client_thr error.\n"
+                           "from Unknown(client thr) to %s:%hu(server thr) ", args.bench_name.c_str() , thrid , 
+                           args.netaddr.ip.c_str() , args.netaddr.port ) ;
+        pr_error( infobuf ) ; 
+        *pconn = NET_THREAD_ERROR ;
+        return ;
+    }
+
     while( round( *pconn ) != NET_THREAD_READY ){
         usleep( ONE_THOUSAND * 10 ) ;
+    }
+
+    for( int i = 0 ; i < 10 ; i ++ ){
+        sprintf( sendbuf , "%d" , NET_THREAD_READY ) ;
+        srv_thr_sock.Send( sendbuf , TOUCH_INFO_SIZE , cli_thr_addr.ip , cli_thr_addr.port ) ;
     }
 
     // Calculate load parameters 
@@ -234,6 +274,7 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
         md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
         for( int i = 0 ; i < measure_rounds ; i ++ ){
             udp_receive_kernel( srv_thr_sock , recvbuf , recvlen ) ;
+            *pconn += UDP_RECV_KERNEL_PACK_PER_ROUND ;
         }
         md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
         actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
@@ -258,7 +299,6 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
             sprintf( infobuf , "%s( thread %d ): sgl_time = %.1fus, recv_pps=%.1fpps, (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
                 args.bench_name.c_str() , thrid , sgl_time * ONE_MILLION , actual_pps , sum_runtimeus, sum_sleepus , sum_runidleus ) ;
             pr_debug( infobuf ) ;
-            *pconn = actual_pps ;
             // re-calculate load parameters
             if( args.network_pps - NETWORK_PPS_CONTROL_LBOUND > actual_pps || 
                 args.network_pps + NETWORK_PPS_CONTROL_RBOUND < actual_pps ){
@@ -324,12 +364,15 @@ int32_t udp_client_bench_entry( bench_args_t args ){
         return -1 ;
     }
 
+    // set socket timeout
+    cli_touch_sock.SetRecvTimeout( 6 , 0 ) ;
+    cli_touch_sock.SetSendTimeout( 6 , 0 ) ;
+
     // touch connections and run stressors 
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
     double *conns = new double[count_thr] ;
     for( int i = 0 ; i < count_thr ; i ++ ) conns[i] = NET_THREAD_WAIT ;
-
     for( int thrid = 1 ; thrid <= count_thr ; thrid ++ ){
         // touch connections
         char *sendbuf = new char[TOUCH_INFO_SIZE] ; // the information is the pack size 
@@ -345,10 +388,12 @@ int32_t udp_client_bench_entry( bench_args_t args ){
                 break ;
             }
             touch_fail_cnt ++ ;
+            sprintf( infobuf , "%s, creating thread %d: Receive timeout " , args.bench_name.c_str() , thrid ) ;
+            pr_debug( infobuf ) ;
             if( touch_fail_cnt >= 10 ){
-                sprintf( infobuf , "%s, creating thread %d: touch server error. Cannot receive reply." , args.bench_name.c_str() , thrid ) ;
+                sprintf( infobuf , "%s, creating thread %d: Cannot receive server's reply. Retrying... " , args.bench_name.c_str() , thrid ) ;
                 pr_error( infobuf ) ;
-                break ;
+                touch_fail_cnt = 0 ;
             }
             usleep( ONE_THOUSAND * 10 ) ; // sleep 0.1s 
         }
@@ -360,7 +405,12 @@ int32_t udp_client_bench_entry( bench_args_t args ){
         delete[] recvbuf ;
         thrs[thrid-1] = thread( udp_client_bench , thrid , args , srv_addr , &conns[thrid-1] ) ;
     }
-    for( int i = 0 ; i < count_thr ; i ++ ) conns[i] = NET_THREAD_READY ;
+    while( true ){
+        int WAIT_cnt = 0 ;
+        for( int i = 0 ; i < count_thr ; i ++ ) WAIT_cnt += conns[i] == NET_THREAD_WAIT ;
+        if( !WAIT_cnt ) break ;
+        usleep( ONE_THOUSAND * 10 ) ;
+    }
 
     if( get_arg_flag( args.flags , FLAG_IS_RUN_PARALLEL ) ){
         pr_warning( "udp test do not support argument:\"parallel\", ignored" ) ;
@@ -416,6 +466,10 @@ int32_t udp_server_bench_entry( bench_args_t args ){
         return -1 ;
     }
 
+    // set socket timeout
+    srv_listen_sock.SetRecvTimeout( 6 , 0 ) ;
+    srv_listen_sock.SetSendTimeout( 6 , 0 ) ;
+
     // listen connections and run stressors 
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
@@ -429,11 +483,13 @@ int32_t udp_server_bench_entry( bench_args_t args ){
         int32_t listen_fail_cnt = 0 , cli_packsize = -1 ;
         while( listen_fail_cnt < 10 && !srv_listen_sock.Recv( listenbuf , TOUCH_INFO_SIZE , &cli_addr.ip , &cli_addr.port ) ){
             listen_fail_cnt ++ ;
-        }
-        if( listen_fail_cnt >= 10 ){
-            sprintf( infobuf , "%s, creating thread %d: listen from client error" , args.bench_name.c_str() , thrid ) ;
-            pr_error( infobuf ) ;
-            break ;
+            sprintf( infobuf , "%s, creating thread %d: Receive timeout " , args.bench_name.c_str() , thrid ) ;
+            pr_debug( infobuf ) ;
+            if( listen_fail_cnt >= 10 ){
+                sprintf( infobuf , "%s, creating thread %d: Cannot receive touch info from client. Listening... " , args.bench_name.c_str() , thrid ) ;
+                pr_error( infobuf ) ;
+                listen_fail_cnt = 0 ;
+            }
         }
         // server create a new thread
         cli_packsize = atoi( listenbuf ) ;
@@ -450,18 +506,22 @@ int32_t udp_server_bench_entry( bench_args_t args ){
     }
 
     // output real time pps
+    double prepsum = 0 , nowpsum = 0 , lasttime = time_now() , thistime ;
     while( true ){
-        double speedsumup = 0 , cnt_norun = 0 ;
+        prepsum = nowpsum , nowpsum = 0 ;
+        int cnt_norun = 0 ;
         char tmp[100] ;
         auto curr_tm = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ;
         std::strftime( tmp , sizeof( tmp ) , "%F %T" , std::localtime( &curr_tm ) ) ;
         for( int i = 0 ; i < count_thr ; i ++ ) {
-            if( conns[i] >= 0 ) speedsumup += conns[i] ;
+            if( conns[i] >= 0 ) nowpsum += conns[i] ;
             else if( conns[i] != NET_THREAD_READY && conns[i] != NET_THREAD_WAIT )  cnt_norun ++ ;
         }
+        thistime = time_now() ;
         sprintf( infobuf , "%s, %s, real time speed: %.1fpps" , 
-                        args.bench_name.c_str() , tmp , speedsumup ) ;
+                        args.bench_name.c_str() , tmp , ( nowpsum - prepsum ) / (thistime - lasttime) ) ;
         pr_info( infobuf ) ;
+        lasttime = thistime ;
         if( cnt_norun == count_thr ) break ;
         sleep( 1 ) ;
     }

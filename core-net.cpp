@@ -117,6 +117,28 @@ bool UdpSocket::ExistsSocket() const {
     return _sockfd > 0 ;
 }
 
+bool UdpSocket::SetRecvTimeout( int32_t sec , int32_t usec ){
+    if( sec < 0 || usec < 0 || sec + usec == 0 ) return false ;
+    timeval tmptv ;
+    tmptv.tv_sec = sec , tmptv.tv_usec = usec ;
+    if (setsockopt( _sockfd , SOL_SOCKET, SO_RCVTIMEO, &tmptv, sizeof(tmptv)) < 0) {
+        pr_error( "UdpSocket: SetTimeout option SO_RCVTIMEO not support\n" ) ;
+        return false ;
+    }
+    return true ;
+}
+
+bool UdpSocket::SetSendTimeout( int32_t sec , int32_t usec ){
+    if( sec < 0 || usec < 0 || sec + usec == 0 ) return false;
+    timeval tmptv ;
+    tmptv.tv_sec = sec , tmptv.tv_usec = usec ;
+    if (setsockopt( _sockfd , SOL_SOCKET, SO_SNDTIMEO , &tmptv, sizeof(tmptv)) < 0) {
+        pr_error( "UdpSocket: SetTimeout option SO_RCVTIMEO not support\n" ) ;
+        return false ;
+    }
+    return true ;
+}
+
 bool UdpSocket::Close() {
     if ( ExistsSocket() ) {
         close(_sockfd);
