@@ -84,8 +84,13 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
         *pconn = NET_THREAD_ERROR ;
         return ;
     }
+
+    sprintf( infobuf , "%s( thread %d ): from %s:%hu(client thr) to %s:%hu(server thr)\n"
+                       "Now waiting for start command from server...", args.bench_name.c_str() , thrid , 
+                        args.netaddr.ip.c_str() , args.netaddr.port , srv_thraddr.ip.c_str() , srv_thraddr.port ) ;
+    pr_info( infobuf ) ; 
     
-    for( int i = 0 ; i < 10 ; i ++ ){
+    for( int i = 0 ; i < 1000 ; i ++ ){
         if( cli_thr_sock.Recv( recvbuf , TOUCH_INFO_SIZE , NULL , NULL ) ){
             if( atoi( recvbuf ) == NET_THREAD_READY ){
                 *pconn = NET_THREAD_READY ;
@@ -154,7 +159,6 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
             sprintf( infobuf , "%s( thread %d ): sgl_time = %.1fus, actual_pps=%.1fpps, (runtime=%.1fus , sleeptime=%.1fus , idletime=%.1fus)" , 
                 args.bench_name.c_str() , thrid , sgl_time * ONE_MILLION , actual_pps , sum_runtimeus, sum_sleepus , sum_runidleus ) ;
             pr_debug( infobuf ) ;
-            *pconn = actual_pps ;
             // re-calculate load parameters
             if( args.network_pps - NETWORK_PPS_CONTROL_LBOUND > actual_pps || 
                 args.network_pps + NETWORK_PPS_CONTROL_RBOUND < actual_pps ){
@@ -417,18 +421,22 @@ int32_t udp_client_bench_entry( bench_args_t args ){
     }
 
     // output real time pps
+    double prepsum = 0 , nowpsum = 0 , lasttime = time_now() , thistime ;
     while( true ){
-        double speedsumup = 0 , cnt_norun = 0 ;
+        prepsum = nowpsum , nowpsum = 0 ;
+        int cnt_norun = 0 ;
         char tmp[100] ;
         auto curr_tm = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now() ) ;
         std::strftime( tmp , sizeof( tmp ) , "%F %T" , std::localtime( &curr_tm ) ) ;
         for( int i = 0 ; i < count_thr ; i ++ ) {
-            if( conns[i] >= 0 ) speedsumup += conns[i] ;
+            if( conns[i] >= 0 ) nowpsum += conns[i] ;
             else if( conns[i] != NET_THREAD_READY && conns[i] != NET_THREAD_WAIT )  cnt_norun ++ ;
         }
+        thistime = time_now() ;
         sprintf( infobuf , "%s, %s, real time speed: %.1fpps" , 
-                        args.bench_name.c_str() , tmp , speedsumup ) ;
+                        args.bench_name.c_str() , tmp , ( nowpsum - prepsum ) / (thistime - lasttime) ) ;
         pr_info( infobuf ) ;
+        lasttime = thistime ;
         if( cnt_norun == count_thr ) break ;
         sleep( 1 ) ;
     }
