@@ -56,7 +56,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
         if( cli_thr_sock.Socket( args.netaddr.ip_type ) ) break ;
     }
     if( !cli_thr_sock.ExistsSocket() ){
-        sprintf( infobuf , "%s( thread %d ): init socket error, IPV%d , IP_PROTOUDP.\n"
+        sprintf( infobuf , "%s( thread %d ): Init socket error, IPV%d , IP_PROTOUDP.\n"
                         "10 tries failed. Please check sudo(root) privilege or related settings\n" , 
                         args.bench_name.c_str() , thrid , (int)args.netaddr.ip_type ) ;
         pr_error( infobuf ) ;
@@ -77,15 +77,15 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
 
     // client thr inform server thr its ip:address
     if( !cli_thr_sock.Send( sendbuf , TOUCH_INFO_SIZE , srv_thraddr.ip , srv_thraddr.port ) ){
-        sprintf( infobuf , "%s( thread %d ): send pack for informing server_thr error.\n"
-                           "from %s:%hu(client thr) to %s:%hu(server thr)", args.bench_name.c_str() , thrid , 
+        sprintf( infobuf , "%s( thread %d ): Send pack for informing server_thr error.\n"
+                           "From %s:%hu(client thr) to %s:%hu(server thr)", args.bench_name.c_str() , thrid , 
                            args.netaddr.ip.c_str() , args.netaddr.port , srv_thraddr.ip.c_str() , srv_thraddr.port ) ;
         pr_error( infobuf ) ; 
         *pconn = NET_THREAD_ERROR ;
         return ;
     }
 
-    sprintf( infobuf , "%s( thread %d ): from %s:%hu(client thr) to %s:%hu(server thr)\n"
+    sprintf( infobuf , "%s( thread %d ): from %s:%hu(client thr) to %s:%hu(server thr). "
                        "Now waiting for start command from server...", args.bench_name.c_str() , thrid , 
                         args.netaddr.ip.c_str() , args.netaddr.port , srv_thraddr.ip.c_str() , srv_thraddr.port ) ;
     pr_info( infobuf ) ; 
@@ -99,7 +99,7 @@ void udp_client_bench( int32_t thrid , bench_args_t args , net_address_t srv_thr
         }
     }
     if( *pconn != NET_THREAD_READY ){
-        sprintf( infobuf , "%s( thread %d ): Cannot receive NET_THREAD_READY from server_thr.\n"
+        sprintf( infobuf , "%s( thread %d ): Cannot receive NET_THREAD_READY from server_thr. "
                            "This thread will exit now.", args.bench_name.c_str() , thrid ) ;
         pr_error( infobuf ) ; 
         *pconn = NET_THREAD_ERROR ;
@@ -214,7 +214,7 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
         uint16_t try_port = (uint16_t) ( args.netaddr.port + port_delta ) ;
         if( srv_thr_sock.Bind( args.netaddr.ip , try_port ) ) break ;
         if( port_delta > (uint16_t)65530 ){
-            sprintf( infobuf , "%s( thread %d ): cannot find available port" , args.bench_name.c_str() , thrid ) ;
+            sprintf( infobuf , "%s( thread %d ): Cannot find available port" , args.bench_name.c_str() , thrid ) ;
             pr_error( infobuf ) ;
             *pconn = NET_THREAD_ERROR ;
             return ;      
@@ -223,8 +223,8 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
     
     // server's new thread touches client main socket
     if( !srv_thr_sock.Send( sendbuf , TOUCH_INFO_SIZE , cli_addr.ip , cli_addr.port ) ){
-        sprintf( infobuf , "%s( thread %d ): send pack for touching client error.\n"
-                           "from %s:%hu(server thr) to %s:%hu(client main)", args.bench_name.c_str() , thrid , 
+        sprintf( infobuf , "%s( thread %d ): Send pack for touching client error.\n"
+                           "From %s:%hu(server thr) to %s:%hu(client main)", args.bench_name.c_str() , thrid , 
                            args.netaddr.ip.c_str() , args.netaddr.port , cli_addr.ip.c_str() , cli_addr.port ) ;
         pr_error( infobuf ) ; 
         *pconn = NET_THREAD_ERROR ;
@@ -234,8 +234,8 @@ void udp_server_bench( int32_t thrid , bench_args_t args , net_address_t cli_add
     // server's new thread get client thread's ip:port
     net_address_t cli_thr_addr ;
     if( !srv_thr_sock.Recv( recvbuf , TOUCH_INFO_SIZE , &cli_thr_addr.ip , &cli_thr_addr.port ) ){
-        sprintf( infobuf , "%s( thread %d ): recv pack from client_thr error.\n"
-                           "from Unknown(client thr) to %s:%hu(server thr) ", args.bench_name.c_str() , thrid , 
+        sprintf( infobuf , "%s( thread %d ): Receive pack from client_thr error.\n"
+                           "From Unknown(client thr) to %s:%hu(server thr) ", args.bench_name.c_str() , thrid , 
                            args.netaddr.ip.c_str() , args.netaddr.port ) ;
         pr_error( infobuf ) ; 
         *pconn = NET_THREAD_ERROR ;
@@ -432,7 +432,7 @@ int32_t udp_client_bench_entry( bench_args_t args ){
         std::strftime( tmp , sizeof( tmp ) , "%F %T" , std::localtime( &curr_tm ) ) ;
         for( int i = 0 ; i < count_thr ; i ++ ) {
             if( conns[i] >= 0 ) nowpsum += conns[i] ;
-            else if( conns[i] != NET_THREAD_READY && conns[i] != NET_THREAD_WAIT )  cnt_norun ++ ;
+            else if( conns[i] < NET_THREAD_STATE_BEGIN ) cnt_norun ++ , nowpsum += -conns[i] ;
         }
         thistime = time_now() ;
         sprintf( infobuf , "%s, %s, real time speed: %.1fpps" , 
