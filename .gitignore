@@ -5,6 +5,7 @@
 *.txt
 *.asm
 icmp
+temp_folder/*
 
 
 # Prerequisites

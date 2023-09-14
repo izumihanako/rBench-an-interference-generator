@@ -32,7 +32,7 @@ SOI_SRC = \
 	rbench-cpu-tlb.cpp \
 	rbench-cpu-l1i.cpp \
 	rbench-mem-bw.cpp \
-	rbench-udp.cpp 
+	rbench-udp.cpp
 
 # Source of interferences(SOI) core file
 CORE_SRC = \
