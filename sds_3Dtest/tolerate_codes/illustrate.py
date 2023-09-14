@@ -105,7 +105,7 @@ def app_3D_res_set_intf_llc():
     intf_llc_thrstr = "28-31" ; intf_mbw_thrstr = "None"
     # limit the mbw stressor's llc usage
     intf_lllc_pqos_id = 3 ; 
-    pqos_set_to( "llc" , intf_lllc_pqos_id , ways[10] ) ; pqos_set_to( "mba" , intf_lllc_pqos_id , mbgear[0] ) 
+    pqos_set_to( "llc" , intf_lllc_pqos_id , ways[10] ) ; pqos_set_to( "mba" , intf_lllc_pqos_id , mbgears[0] ) 
     pqos_allocate( "core" , intf_lllc_pqos_id , intf_llc_thrstr )
     print( "pqos COS%d: llc=%s , mba = %s -> core %s"%( intf_lllc_pqos_id , ways[10] , mbgears[0] , intf_mbw_thrstr ) , flush = True )
     mem_bw_mb = 0 ; llcstrength = "100"
