@@ -339,6 +339,7 @@ int32_t cache_bench_entry( bench_args_t ) ;
 int32_t cpu_int_bench_entry( bench_args_t ) ;
 int32_t cpu_float_bench_entry( bench_args_t ) ;
 int32_t simd_avx_bench_entry( bench_args_t ) ;
+int32_t simd_avx512_bench_entry( bench_args_t ) ;
 int32_t tlb_bench_entry( bench_args_t ) ;
 int32_t mem_bw_bench_entry( bench_args_t ) ;
 int32_t cpu_l1i_bench_entry( bench_args_t ) ;
