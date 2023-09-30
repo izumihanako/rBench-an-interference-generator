@@ -32,7 +32,8 @@ SOI_SRC = \
 	rbench-cpu-tlb.cpp \
 	rbench-cpu-l1i.cpp \
 	rbench-mem-bw.cpp \
-	rbench-udp.cpp
+	rbench-udp.cpp \
+	rbench-simd-avx.cpp 
 
 # Source of interferences(SOI) core file
 CORE_SRC = \
@@ -54,6 +55,9 @@ rbench-cpu-l1i-kernel.o : rbench-cpu-l1igen.cpp
 	$(CC) $(CFLAGS) $< -o rbench-cpu-l1igen.exe
 	./rbench-cpu-l1igen.exe > rbench-cpu-l1i-kernel.asm
 	$(AS) -c rbench-cpu-l1i-kernel.asm -o $@ 
+
+rbench-simd-avx.o : rbench-simd-avx.cpp $(HEADERS)
+	$(CC) $(CFLAGS) -mavx -mavx2 -c rbench-simd-avx.cpp -o rbench-simd-avx.o
 
 %.o : %.cpp $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
