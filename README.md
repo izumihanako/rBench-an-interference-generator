@@ -1,19 +1,20 @@
 # rBench
 
 **rBench** is a toolkit containing several stress tests. It was originally designed to serve the thesis Eirene[^Eirene], which could stress a computer resource of a particular dimension as a way of interfering with other applications that might be occupying that resource.
+
 **rBench** was designed to as focus as possible on the target resource, which means that interference with one dimension will put as little stress as possible on the other dimensions. It includes tests for CPU, cache, memory, disk, network and other resource dimensions, covering the computer resources required by common applications.
 
 
 
 ## Usage
 
-Download the source code, go to the code directory and run the command to compile:
+Download the source code, enter the code directory and run the command to compile:
 
 ```bash
 make
 ```
 
-If you need to compile the AVX512 module, you need to change the value of AVX512SUPPORT in the Makefile.( Note that the AVX512 module has not been rigorously tested and verified ).
+If you need to compile the AVX512 module, you need to change the value of `AVX512SUPPORT` in the Makefile.( Note that the AVX512 module has not been rigorously tested and verified ).
 
 
 
@@ -41,6 +42,16 @@ Note that rbench itself has parameters to adjust CPU usage, e.g. the following c
 - If rbench fails to reach the run strength specified by the parameter for a period of time, it will output warning messages.
 - If rbench gets an error while running (e.g. mmap failed or unable to create a socket) that still fails on retry, then it outputs the error message and exits the corresponding thread
 - Other output information...
+
+
+
+
+
+## Sub-folders
+
+- sds_3Dtest: **NOT NECESSERY to run rBench.** Contains a 3D-illustrate for some programs, i.e., an illustrate of how the performance of the application varies with different cache resources and memory bandwidth resources.
+- udptest:  **NOT NECESSERY to run rBench.** Some naive udp test program.
+- validate: **NOT NECESSERY to run rBench.** Includes some code to test the validity and focus of the rbench.
 
 
 
