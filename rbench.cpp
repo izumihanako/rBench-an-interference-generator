@@ -23,7 +23,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , "page-tot N"     , NULL         , "(stressor) N (MB), MAKE SURE that this parameter is greater than the total memory size that tlb can cache"} ,
     { NULL           , "pack-per-sec N" , "pps N"      , "(stressor, network) For network related stressors, set the network pack sending rate to N pps" } ,
     { NULL           , "pack-size N"    , "psize N"    , "(stressor, network) For network related stressors, set the network pack size to N bytes" } ,
-    { NULL           , "parallel"       , NULL         , "(global, alpha) Run in parallel mode"} ,
+    { NULL           , "parallel"       , NULL         , "(global, not rigorously tested) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified stressor. Supported test items are cacheL1, cacheL2, "
                                                          "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, disk-write, tlb, mem-bw, simd-avx, simd-avx512" } ,
@@ -246,6 +246,10 @@ void parse_opts( int argc , char **argv ){
                     break ;
                 } else if( !strncasecmp( pargs->bench_name.c_str() , "udp_" , 4 ) ){
                     sprintf( infobuf , "strength setting are not valid for network stressors, ignored" ) ;
+                    pr_warning( infobuf ) ;
+                    break ;
+                } else if( !strncasecmp( pargs->bench_name.c_str() , "disk" , 4 ) ){
+                    sprintf( infobuf , "strength setting are not valid for disk stressors, ignored" ) ;
                     pr_warning( infobuf ) ;
                     break ;
                 }

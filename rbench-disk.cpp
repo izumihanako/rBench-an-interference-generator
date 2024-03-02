@@ -15,13 +15,12 @@ static void OPTIMIZE3 disk_write_kernel2( int fd , uint64_t fsize , uint64_t fpo
         lseek( fd , 0 , SEEK_SET ) ;
         fpos = 0 ;
     }
-    write( fd , mem , DISK_WRITE_GRANU ) ;
+    (void)write( fd , mem , DISK_WRITE_GRANU ) ;
     fpos += DISK_WRITE_GRANU ;
 }
 
 void disk_write_bench( int32_t thrid , bench_args_t args ){
     char infobuf[1024] ;
-    double start_t = time_now() ;
 
     int diskfile_rnd = 0xffffff & ( (long long)( new char ) + rand() + time(0) ) ;
     char filename[30] ;
@@ -31,6 +30,7 @@ void disk_write_bench( int32_t thrid , bench_args_t args ){
     if( ftruncate64( fd , fsize ) == -1 ){
         sprintf( infobuf , "%s( thread %d ): ftruncate64( %s , %lu ) failed" ,
                  args.bench_name.c_str() , thrid , filename , fsize ) ;
+        pr_error( infobuf ) ;
         remove( filename ) ;
         return ;
     }
@@ -49,8 +49,8 @@ void disk_write_bench( int32_t thrid , bench_args_t args ){
            run_idlet = md_t_end - md_t_start - actl_runt , sgl_idle = run_idlet / measure_rounds ;
     int32_t module_runrounds , module_sleepus ;
     strength_to_time( sgl_time , sgl_idle , args.strength , args.period , module_runrounds , module_sleepus ) ;
-    printf( "sgl_time = %.1fus, prepare end\n" , (sgl_time + sgl_idle)*ONE_MILLION ) ;
-    fflush( stdout ) ;
+    sprintf( infobuf , "sgl_time = %.1fus, prepare end\n" , (sgl_time + sgl_idle)*ONE_MILLION ) ;
+    pr_info( infobuf ) ;
 
     // Run stressor
     int32_t round_cnt = 0 , time_limit = args.time ;
