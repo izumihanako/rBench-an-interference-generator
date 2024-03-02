@@ -6,7 +6,7 @@
 *.asm
 icmp
 temp_folder/*
-.vscode/*
+.vscode/
 
 # Prerequisites
 *.d
