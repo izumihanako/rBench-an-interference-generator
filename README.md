@@ -4,7 +4,7 @@
 
 **rBench** was designed to as focus as possible on the target resource, which means that interference with one dimension will put as little stress as possible on the other dimensions. It includes tests for CPU, cache, memory, disk, network and other resource dimensions, covering the computer resources required by common applications.
 
- 
+&nbsp;
 
 ## Usage
 
@@ -16,7 +16,7 @@ make
 
 If you need to compile the AVX512 module, you need to change the value of `AVX512SUPPORT` in the Makefile.( Note that the AVX512 module has not been rigorously tested and verified ).
 
- 
+ &nbsp;
 
 Then run the following command to run rbench:
 
@@ -34,7 +34,7 @@ Note that rbench itself has parameters to adjust CPU usage, e.g. the following c
 ./rbench.exe -r cpu-int -n 2 -s 50
 ```
 
- 
+ &nbsp;
 
  
 
@@ -45,7 +45,7 @@ Note that rbench itself has parameters to adjust CPU usage, e.g. the following c
 - If rbench gets an error while running (e.g. mmap failed or unable to create a socket) that still fails on retry, then it outputs the error message and exits the corresponding thread
 - Other output information...
 
- 
+ &nbsp;
 
  
 
@@ -57,7 +57,7 @@ Note that rbench itself has parameters to adjust CPU usage, e.g. the following c
 - udptest:  **NOT NECESSERY to run rBench.** Some naive udp test program.
 - validate: **NOT NECESSERY to run rBench.** Includes some code to test the validity and focus of the rbench.
 
- 
+ &nbsp;
 
  
 
