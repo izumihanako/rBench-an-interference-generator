@@ -96,12 +96,13 @@ struct bench_args_t{
     union{
         int64_t mem_bandwidth ; // bytes 
         struct {
-            int32_t network_pps ;  // packs per second
-            int32_t network_psize ;// pack size
+            int32_t network_pps ;   // packs per second
+            int32_t network_psize ; // pack size
         } ;
-        // int64_t network_pps ; // packs per second
-        uint64_t cache_size ;    // bytes 
-        uint64_t tlb_page_tot ;  // Larger than the sum of page sizes that tlb can cache
+        // int64_t network_pps ;    // packs per second
+        uint64_t cache_size ;       // bytes 
+        uint64_t tlb_page_tot ;     // Larger than the sum of page sizes that tlb can cache
+        uint64_t disk_file_size ;   // file size of disk operations
     } ;
     bench_args_t(){
         to_addr.ip_type = netaddr.ip_type = NET_ADDRESS_TYPE_IPV4 ;
@@ -153,6 +154,7 @@ enum argvopt_t{
     OPT_cache_size ,
     OPT_check ,
     OPT_debug ,
+    OPT_disk_file_size ,
     OPT_no_warn ,
     OPT_page_tot ,
     OPT_pack_per_sec ,
@@ -343,6 +345,7 @@ int32_t simd_avx512_bench_entry( bench_args_t ) ;
 int32_t tlb_bench_entry( bench_args_t ) ;
 int32_t mem_bw_bench_entry( bench_args_t ) ;
 int32_t cpu_l1i_bench_entry( bench_args_t ) ;
+int32_t disk_write_bench_entry( bench_args_t ) ;
 int32_t udp_server_bench_entry( bench_args_t ) ;
 int32_t udp_client_bench_entry( bench_args_t ) ;
 

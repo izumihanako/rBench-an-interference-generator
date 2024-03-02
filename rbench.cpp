@@ -15,6 +15,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , "cache-size N"   , NULL         , "(stressor) Specify the size of the cache buffer of the cache stressor as N (bytes)" } ,
     { NULL           , "check"          , NULL         , "(global) Run preset system check tasks. If this option is present, all other options will be ignored" } ,
     { NULL           , "debug"          , NULL         , "(global) Output debug information" } ,
+    { "d N"          , "disk-file-size=N",NULL         , "(stressor, disk) Set the disk file size to N bytes" } ,
     { "l"            , "limited=N"      , NULL         , "(stressor) If limited, the stressor will stop after N rounds. Must have \"=\" !!!" } ,
     { "b W"          , "mem-bandwidth W", "mb W"       , "(stressor) For mem-bw, set mem-bandwidth to W MB/s for every instance" } ,
     { "n N"          , "ninstance N"    , "instance N" , "(stressor) Start N instances of stressors" } ,
@@ -25,7 +26,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , "parallel"       , NULL         , "(global, alpha) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified stressor. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, tlb, mem-bw, simd-avx, simd-avx512" } ,
+                                                         "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, disk-write, tlb, mem-bw, simd-avx, simd-avx512" } ,
     { "s P"          , "strength N"     , NULL         , "(stressor) Set stressors' load strength to P% for every instance (run P% time per time granularity)."
                                                          "Not valid for mem-bw, network related stressors, ..." } ,
     { "t N"          , "time N"         , NULL         , "(stressor) If specified, the stressor will stop after N seconds" } ,
@@ -48,6 +49,7 @@ static const struct option long_options[] = {
     { "cache-size"    , required_argument , 0 , OPT_cache_size    } ,
     { "check"         , no_argument       , 0 , OPT_check         } ,
     { "debug"         , no_argument       , 0 , OPT_debug         } ,
+    { "diskfile-size" , required_argument , 0 , OPT_disk_file_size} ,
     { "no-warn"       , no_argument       , 0 , OPT_no_warn       } ,
     { "page-tot"      , required_argument , 0 , OPT_page_tot      } ,
     { "pack-per-sec"  , required_argument , 0 , OPT_pack_per_sec  } ,
@@ -71,6 +73,7 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cpu-l1i" , &cpu_l1i_bench_entry ) ,
     pair< string , bench_func_t >( "tlb"     , &tlb_bench_entry ) ,
     pair< string , bench_func_t >( "mem-bw"  , &mem_bw_bench_entry ) ,
+    pair< string , bench_func_t >( "disk-write" , &disk_write_bench_entry ) ,
     pair< string , bench_func_t >( "udp-server" , &udp_server_bench_entry ) ,
     pair< string , bench_func_t >( "udp-client" , &udp_client_bench_entry ) ,
 } ;
@@ -87,6 +90,7 @@ static const map<string , int64_t > bench_funcs_limited_default = {
     pair< string , int64_t >( "cpu-l1i" , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "tlb"     , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "mem-bw"  , ONE_THOUSAND *  50 ) ,
+    pair< string , int64_t >( "disk-write" , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "udp-client" , ONE_THOUSAND *  50 ) ,
     pair< string , int64_t >( "udp-server" , ONE_BILLION ) ,
 } ;
@@ -158,7 +162,7 @@ void parse_opts( int argc , char **argv ){
     char infobuf[1024] ;
     while( true ){
         if( get_arg_flag( global_flag , FLAG_IS_CHECK ) ) break ;
-        if( ( c = getopt_long( argc , argv , "?r:n:l::t:s:b:" , long_options , &option_index ) ) == -1 ){
+        if( ( c = getopt_long( argc , argv , "?r:n:l::t:s:b:d:" , long_options , &option_index ) ) == -1 ){
             break ;
         }
         switch( c ){
@@ -202,6 +206,10 @@ void parse_opts( int argc , char **argv ){
                     // tlb step size setting
                     if( !strncasecmp( optarg , "tlb" , 3 ) ){
                         pargs->tlb_page_tot = DEFAULT_TLB_PAGE_TOT ;
+                    }
+                    // disk file size default setting 
+                    if( !strncasecmp( optarg , "disk-write" , 10 ) ){
+                        pargs->disk_file_size = 1 * GB ;
                     }
                     // cache size level setting
                     else if( !strncasecmp( optarg , "cacheL1" , 7 ) ){
@@ -350,6 +358,17 @@ void parse_opts( int argc , char **argv ){
             }
             case OPT_debug :{
                 set_arg_flag( global_flag , FLAG_PRINT_DEBUG_INFO ) ;
+                break ;
+            }
+            case OPT_disk_file_size:{
+                uint64_t i64 = atoi( optarg ) * MB ;
+                if( i64 <= 100 * MB ){
+                    sprintf( infobuf , "disk file size must be larger, or the module will work incorrectly"
+                    "the number is adjust to %llu (100*MB)" , 100 * MB ) ;
+                    i64 = 100 * MB ;
+                    pr_warning( infobuf ) ;
+                }
+                pargs->disk_file_size = i64 ;
                 break ;
             }
             case OPT_no_warn :{

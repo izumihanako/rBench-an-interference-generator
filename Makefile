@@ -51,6 +51,7 @@ SOI_SRC = \
 	rbench-cpu-float.cpp \
 	rbench-cpu-tlb.cpp \
 	rbench-cpu-l1i.cpp \
+	rbench-disk.cpp \
 	rbench-mem-bw.cpp \
 	rbench-udp.cpp \
 	rbench-simd-avx.cpp \
@@ -101,4 +102,6 @@ clean:
 	rm -f ${DESTDIR}$(OBJS)
 	rm -f ${DESTDIR}$(ASMS)
 	rm -f ${DESTDIR}*.exe
+	rm -f ${DESTDIR}*.diskfile
+	rm -f ${DESTDIR}*.file
 	cd $(VALIDATEDIR) ; make clean
