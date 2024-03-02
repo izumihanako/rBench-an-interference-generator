@@ -348,7 +348,7 @@ void parse_opts( int argc , char **argv ){
                 uint64_t i64 = atoi( optarg ) * MB ;
                 if( i64 <= 1 * GB ){
                     sprintf( infobuf , "page total is (%lu). Make sure that the page tot "
-                    "is greater than the total memory size that tlb can cache" , i64 ) ;
+                    "is greater than 2x the total memory size that tlb can cache" , i64 ) ;
                     pr_warning( infobuf ) ;
                 }
                 pargs->tlb_page_tot = i64 ;
