@@ -1,90 +1,89 @@
-// stress-ng method
-// https://github.com/ColinIanKing/stress-ng/blob/master/stress-cpu.c#L759
+// https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 #include "rbench.hpp"
-#ifndef __long_double_t 
-#define __long_double_t long double
-#endif 
+#include <immintrin.h>
 
 static bool warn_flag = false ;
 
-#define float_thresh(x, _type)	x = (_type)		\
-	((fabs((double)x) > 1.0) ?	\
-	((_type)(0.1 + (double)x - (double)(long)x)) :	\
-	((_type)(x)))
+static void OPTIMIZE0 simd_avx512_ops_kernel(){
+#ifdef AVX512_SUPPORTED
+    mwc_t mwc_eng ;
+    mwc_eng.set_default_seed() ;
 
-template<typename T, typename Func>
-static void OPTIMIZE0 float_ops_ikernel( T r_final , Func _sin , Func _cos ){
-    // mwc_t mwc_eng ;
-    // mwc_eng.set_default_seed() ;
-    // const uint32_t r1 = mwc_eng.mwc32() ;
-    // const uint32_t r2 = mwc_eng.mwc32() ;
-    const uint32_t r1 = 820856226u ;
-    const uint32_t r2 = 2331188998u ;
+    __m512d a = _mm512_set_pd( (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ,
+                               (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ) ;
+    __m512d b = _mm512_set_pd( (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ,
+                               (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ) ;
+    __m512d c = _mm512_set_pd( (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ,
+                               (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() , (double)mwc_eng.mwc32() ) ;
+    __m512d d = _mm512_set_pd( 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 ) ;
+    __m512d tmp ;
 
-    T register a = (T) 0.18728L ,
-               b = (T) ( (double)r1 / 65536.0 ) ,
-               c = (T) ( (double)r2 / 65536.0 ) ,
-               d = (T) 0.0 , r ;
-    for( float i = 0.0 ; i < 1000.0 ; i ++ ){
+    for( int i = 0 ; i < 1000 ; i ++ ){
         do{
-            a = a + b ;
-            d = a * c ;
-            b = a * c ;
-            c = a - b ;
-            d = a / (T)8.1 ;
-            float_thresh( d , T ) ;
-            a = c / (T)5.1923 ;
-            float_thresh( a , T ) ;
-            float_thresh( c , T ) ;
-            b = c + a ;
-            c = b * (T)_sin(b) ;
-            d = d + b + (T)_sin(a) ;
-            a = (T)_cos( (double)( b + c ) ) ;
-            b = b * c ; 
-            c = c + (T)1.5 ;
-            d = d - (T)_sin(c) ;
-            a = a * (T)_cos(b) ;
-            b = b + (T)_cos(c) ;
-            c = (T)_sin( a + b ) / (T)2.344 ;
-            b = d - (T)0.5 ;
+            a = _mm512_add_pd( a , b ) ;
+            d = _mm512_mul_pd( a , c ) ;
+            b = _mm512_mul_pd( a , c ) ;
+            c = _mm512_sub_pd( a , b ) ;
+            d = _mm512_div_pd( a , _mm512_set_pd( 8.1 , 8.1 , 8.1 , 8.1 , 8.1 , 8.1 , 8.1 , 8.1 ) ) ;
+            tmp = _mm512_round_pd( d , _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC ) ;
+            d = _mm512_sub_pd( d , tmp ) ;
+            a = _mm512_div_pd( c , _mm512_set_pd( 5.1923 , 5.1923 , 5.1923 , 5.1923 , 5.1923 , 5.1923 , 5.1923 , 5.1923 ) ) ;
+            tmp = _mm512_round_pd( a , _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC ) ;
+            a = _mm512_sub_pd( a , tmp ) ;
+            tmp = _mm512_round_pd( c , _MM_FROUND_TO_ZERO |_MM_FROUND_NO_EXC ) ;
+            c = _mm512_sub_pd( c , tmp ) ;
+            b = _mm512_add_pd( c , a ) ;
+            d = _mm512_castsi512_pd( _mm512_srli_epi64( _mm512_castpd_si512(d) , 2 ) ) ;
+            d = _mm512_castsi512_pd( _mm512_slli_epi64( _mm512_castpd_si512(d) , 2 ) ) ;
+            c = _mm512_hadd_pd( a , b ) ;
+            d = _mm512_permute4x64_pd( d , 0x78 ) ;
+            a = _mm512_permute4x64_pd( a , 0x63 ) ;
+            b = _mm512_mul_pd( b , c ) ;
+            c = _mm512_add_pd( c , _mm512_set_pd( 1.5 , 1.5 , 1.5 , 1.5 , 1.5 , 1.5 , 1.5 , 1.5 ) ) ;
+            d = _mm512_addsub_pd( d , c ) ;
+            a = _mm512_addsub_pd( a , b ) ;
+            b = _mm512_addsub_pd( b , c ) ;
+            b = _mm512_castsi512_pd( _mm512_srli_epi64( _mm512_castpd_si512(b) , 3 ) ) ;
+            b = _mm512_castsi512_pd( _mm512_slli_epi64( _mm512_castpd_si512(b) , 3 ) ) ;
+            c = _mm512_div_pd( _mm512_add_pd( a , b ) , c ) ;
+            b = _mm512_sub_pd( d , b ) ;
         } while( 0 ) ;
-    } 
-
-    r = a + b + c + d ;
-    // Calculate verification answer
-    if( false ){ // Calculate before compilation
-        std::stringstream ss ; ss.precision( 15 ) ;
-        string sr ;
-        ss << (double)r , ss >> sr ; ss.clear() ;
-        printf( "%s: r = %s \n" , typeid( T ).name() , sr.c_str() ) ;
     }
-
-    // verify
-    if( !f_is_zero( r - r_final ) && !warn_flag ){
+    tmp = _mm512_add_pd( a , b ) ;
+    tmp = _mm512_add_pd( tmp , c ) ;
+    tmp = _mm512_add_pd( tmp , d ) ;
+    ALIGN64 double res[8] , std[8] = { -2.5, 2.5, -2.5, 2.5 } ;
+    _mm512_storeu_pd( res , tmp ) ;
+    // printf( "%.10f %.10f %.10f %.10f\n" , res[0] , res[1] , res[2] , res[3] ) ;
+    // printf( "%.10f %.10f %.10f %.10f\n" , res[4] , res[5] , res[6] , res[7] ) ;
+    // if( ( !f_is_zero( res[0] - std[0] ) || !f_is_zero( res[1] - std[1] ) ||
+    //     !f_is_zero( res[2] - std[2] ) || !f_is_zero( res[3] - std[3] ) ) && !warn_flag ){
+    //         char infobuf[128] ;
+    //         warn_flag = true ;
+    //         pr_warning( string( "error decected @ simd-avx, failed __m512d" ) + string( " math operations" ) ) ;
+    //         sprintf( infobuf , "expected (%.2f|%.2f|%.2f|%.2f), got (%.2f|%.2f|%.2f|%.2f)" ,
+    //                  std[0] , std[1] , std[2] , std[3] , res[0] , res[1] , res[2] , res[3] ) ;
+    //         pr_warning( infobuf ) ;
+    //     }
+#else
+    char infobuf[1024] ;
+    if( !warn_flag ){
+        sprintf( infobuf , "CPU do not support avx512 inst set" ) ;
+        pr_warning( infobuf ) ;
         warn_flag = true ;
-        pr_warning( string( "error decected @ cpu-float-kernel, failed " ) + 
-                  string( typeid( T ).name() ) + string( " math operations" ) ) ;
     }
-}
- 
-static void float_ops_kernel(){
-// #if (_GLIBCXX_USE_FLOAT128)
-//         float_ops_ikernel<__float128>( 0 , __builtin_sin , __builtin_cos ) ;
-// #endif
-    float_ops_ikernel<__long_double_t>( -2.0687397322345 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<double_t>( -5.21491991288263 , __builtin_sin , __builtin_cos ) ;
-    float_ops_ikernel<float_t>( (float)-2.88806390762329 , __builtin_sin , __builtin_cos ) ;
+#endif
 }
 
-void cpu_float_bench( int32_t thrid , bench_args_t args ){
+void simd_avx512_bench( int32_t thrid , bench_args_t args ){
     char infobuf[1024] ;
 
+#ifdef AVX512_SUPPORTED
     // Calculate load parameters 
     double md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
     int measure_rounds = 5000 ;
     for( int i = 1 ; i <= measure_rounds ; i ++ ){
-        float_ops_kernel() ;
+        simd_avx512_ops_kernel() ;
     }
     double md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
     double actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , sgl_time = actl_runt / measure_rounds , 
@@ -104,7 +103,7 @@ void cpu_float_bench( int32_t thrid , bench_args_t args ){
         measure_rounds = module_runrounds ;
         md_thr_cpu_t_start = thread_time_now() , md_t_start = time_now() ;
         for( int i = 0 ; i < measure_rounds ; i ++ ){
-            float_ops_kernel() ;
+            simd_avx512_ops_kernel() ;
         }
         md_thr_cpu_t_end = thread_time_now() , md_t_end = time_now() ;
         actl_runt = md_thr_cpu_t_end - md_thr_cpu_t_start , run_idlet = md_t_end - md_t_start - actl_runt ;
@@ -157,9 +156,17 @@ void cpu_float_bench( int32_t thrid , bench_args_t args ){
     sprintf( infobuf , "%s( thread %d ): stopped after %.3f seconds, %ld rounds" , 
         args.bench_name.c_str() ,  thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
+#else 
+    if( !warn_flag ){
+        sprintf( infobuf , "Makefile given that CPU do not support avx512 inst set, %s( thread %d ) will exit now" ,
+                 args.bench_name.c_str() , thrid ) ;
+        pr_warning( infobuf ) ;
+        warn_flag = true ;
+    }
+#endif
 }
 
-int32_t cpu_float_bench_entry( bench_args_t args ){
+int32_t simd_avx512_bench_entry( bench_args_t args ){
     int count_thr = args.threads ;
     if( get_arg_flag( args.flags , FLAG_IS_CHECK ) || get_arg_flag( args.flags , FLAG_PRINT_DEBUG_INFO ) ){
         args.print_argsinfo() ;
@@ -168,7 +175,7 @@ int32_t cpu_float_bench_entry( bench_args_t args ){
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
     for( int i = 0 ; i < count_thr ; i ++ ){
-        thrs[i] = thread( cpu_float_bench , i + 1 , args ) ;
+        thrs[i] = thread( simd_avx512_bench , i + 1 , args ) ;
     }
     if( get_arg_flag( args.flags , FLAG_IS_RUN_PARALLEL ) ){
         for( auto &thr : thrs ){
@@ -181,5 +188,3 @@ int32_t cpu_float_bench_entry( bench_args_t args ){
     }
     return 0 ;
 }
-
-#undef float_thresh

@@ -25,7 +25,7 @@ static const help_info_t help_entrys[] = {
     { NULL           , "parallel"       , NULL         , "(global, alpha) Run in parallel mode"} ,
     { NULL           , "period N"       , NULL         , "(stressor) If specified, the time granularity is N microseconds" } ,
     { "r NAME"       , "run NAME"       , NULL         , "(stressor) Run the specified stressor. Supported test items are cacheL1, cacheL2, "
-                                                         "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, tlb, mem-bw"    } ,
+                                                         "cacheL3, cache, cpu-int, cpu-float, cpu-l1i, tlb, mem-bw, simd-avx, simd-avx512" } ,
     { "s P"          , "strength N"     , NULL         , "(stressor) Set stressors' load strength to P% for every instance (run P% time per time granularity)."
                                                          "Not valid for mem-bw, network related stressors, ..." } ,
     { "t N"          , "time N"         , NULL         , "(stressor) If specified, the stressor will stop after N seconds" } ,
@@ -66,6 +66,8 @@ static const map<string , bench_func_t > bench_funcs = {
     pair< string , bench_func_t >( "cacheL3" , &cache_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-int" , &cpu_int_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-float" , &cpu_float_bench_entry ) ,
+    pair< string , bench_func_t >( "simd-avx" , &simd_avx_bench_entry ) ,
+    pair< string , bench_func_t >( "simd-avx512" , &simd_avx512_bench_entry ) ,
     pair< string , bench_func_t >( "cpu-l1i" , &cpu_l1i_bench_entry ) ,
     pair< string , bench_func_t >( "tlb"     , &tlb_bench_entry ) ,
     pair< string , bench_func_t >( "mem-bw"  , &mem_bw_bench_entry ) ,
@@ -80,6 +82,8 @@ static const map<string , int64_t > bench_funcs_limited_default = {
     pair< string , int64_t >( "cacheL3" , ONE_THOUSAND * 100 ) ,
     pair< string , int64_t >( "cpu-int" , ONE_THOUSAND *  20 ) ,
     pair< string , int64_t >( "cpu-float",ONE_THOUSAND *  20 ) ,
+    pair< string , int64_t >( "simd-avx" , ONE_THOUSAND * 20 ) ,
+    pair< string , int64_t >( "simd-avx512" , ONE_THOUSAND * 20 ) ,
     pair< string , int64_t >( "cpu-l1i" , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "tlb"     , ONE_THOUSAND *  10 ) ,
     pair< string , int64_t >( "mem-bw"  , ONE_THOUSAND *  50 ) ,
@@ -301,6 +305,14 @@ void parse_opts( int argc , char **argv ){
                 bench_tasks.emplace_back(  (*bench_funcs.find( string( "cpu-float" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;
                 pargs->bench_name = string( "cpu-float" ) ;
+                // simd avx&avx2 double precision speed
+                bench_tasks.emplace_back(  (*bench_funcs.find( string( "simd-avx" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "simd-avx" ) ;
+                // simd avx512 double precision speed
+                bench_tasks.emplace_back(  (*bench_funcs.find( string( "simd-avx512" ) ) ).second , *(new bench_args_t()) ) ;
+                pargs = &( *bench_tasks.rbegin() ).args ;
+                pargs->bench_name = string( "simd-avx512" ) ;
                 // cacheL1i speed
                 bench_tasks.emplace_back( (*bench_funcs.find( string( "cpu-l1i" ) ) ).second , *(new bench_args_t()) ) ;
                 pargs = &( *bench_tasks.rbegin() ).args ;

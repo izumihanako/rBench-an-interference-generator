@@ -31,26 +31,26 @@ static void OPTIMIZE3 mem_bw_init_kernel( stream_type* a , stream_type* b , stre
     }
 }
 
-static void mem_bw_bench_module( int32_t thrid , bench_args_t args , uint64_t array_len_ ){
-    char* blocka, *blockb , *blockc ;
-    stream_type *a , *b , *c ;
+static void mem_bw_bench_module( int32_t thrid , bench_args_t args , uint64_t array_len_ , stream_type*a , stream_type *b , stream_type *c ){
+    // char* blocka, *blockb , *blockc ;
+    // stream_type *a , *b , *c ;
     char infobuf[1024] ;
 
-    // Allocate memory buffer for membw benchmark
-    // at least 6 * size(L3) for each array
-    uint64_t array_len = array_len_ , array_ptr = 0 ,
-             buffer_size = array_len * sizeof( stream_type ) , buffer_align = cpuinfo.page_size ;
-    blocka = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
-    blockb = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
-    blockc = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
-    if( blocka == MAP_FAILED || blockb == MAP_FAILED || blockc == MAP_FAILED ){
-        sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
-        pr_error( infobuf ) ;
-        return ;
-    }
-    a = (stream_type*)( blocka + buffer_align - (uintptr_t)blocka % buffer_align ) ;
-    b = (stream_type*)( blockb + buffer_align - (uintptr_t)blockb % buffer_align ) ;
-    c = (stream_type*)( blockc + buffer_align - (uintptr_t)blockc % buffer_align ) ;
+    // // Allocate memory buffer for membw benchmark
+    // // at least 6 * size(L3) for each array
+    uint64_t array_len = array_len_ , array_ptr = 0 ;
+    // uint64_t buffer_size = array_len * sizeof( stream_type ) , buffer_align = cpuinfo.page_size ;
+    // blocka = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    // blockb = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    // blockc = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    // if( blocka == MAP_FAILED || blockb == MAP_FAILED || blockc == MAP_FAILED ){
+    //     sprintf( infobuf , "%s( thread %d ): mmap fails after retry, thread exits", args.bench_name.c_str() , thrid ) ;
+    //     pr_error( infobuf ) ;
+    //     return ;
+    // }
+    // a = (stream_type*)( blocka + buffer_align - (uintptr_t)blocka % buffer_align ) ;
+    // b = (stream_type*)( blockb + buffer_align - (uintptr_t)blockb % buffer_align ) ;
+    // c = (stream_type*)( blockc + buffer_align - (uintptr_t)blockc % buffer_align ) ;
 
     // init value 
     mem_bw_init_kernel( a , b , c , array_len ) ;
@@ -143,9 +143,9 @@ static void mem_bw_bench_module( int32_t thrid , bench_args_t args , uint64_t ar
         args.bench_name.c_str() , thrid , time_now() - t_start , knl_round_sumup ) ;
     pr_info( infobuf ) ;
     // Deallocate the memory buffer
-    munmap( (void*)blocka , buffer_size + buffer_align ) ;
-    munmap( (void*)blockb , buffer_size + buffer_align ) ;
-    munmap( (void*)blockc , buffer_size + buffer_align ) ;
+    // munmap( (void*)blocka , buffer_size + buffer_align ) ;
+    // munmap( (void*)blockb , buffer_size + buffer_align ) ;
+    // munmap( (void*)blockc , buffer_size + buffer_align ) ;
 }
 
 int32_t mem_bw_bench_entry( bench_args_t args ){
@@ -153,6 +153,26 @@ int32_t mem_bw_bench_entry( bench_args_t args ){
     if( get_arg_flag( args.flags , FLAG_IS_CHECK ) || get_arg_flag( args.flags , FLAG_PRINT_DEBUG_INFO ) ){
         args.print_argsinfo() ;
     }
+
+
+    // Allocate memory buffer for membw benchmark
+    // at least 6 * size(L3) for each array
+    uint64_t array_len = cpuinfo.get_data_cache_size_level( 3 ) * 6 ,
+             buffer_size = array_len * sizeof( stream_type ) , buffer_align = cpuinfo.page_size ;
+    char* blocka = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    char* blockb = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    char* blockc = (char*)mmap_with_retry( buffer_size + buffer_align ) ;
+    if( blocka == MAP_FAILED || blockb == MAP_FAILED || blockc == MAP_FAILED ){
+        char infobuf[1024] ;
+        sprintf( infobuf , "%s: mmap fails after retry, exits", args.bench_name.c_str() ) ;
+        pr_error( infobuf ) ;
+        return -1 ;
+    }
+    stream_type* a_start = (stream_type*)( blocka + buffer_align - (uintptr_t)blocka % buffer_align ) ;
+    stream_type* b_start = (stream_type*)( blockb + buffer_align - (uintptr_t)blockb % buffer_align ) ;
+    stream_type* c_start = (stream_type*)( blockc + buffer_align - (uintptr_t)blockc % buffer_align ) ;
+
+
     // Allocate memory buffer for membw benchmark
     // at least 6 * size(L3) in total, so at least 6*size(L3)/ninstance for each instance 
     uint64_t instance_array_len = cpuinfo.get_data_cache_size_level( 3 ) * 6 / count_thr ;
@@ -161,7 +181,10 @@ int32_t mem_bw_bench_entry( bench_args_t args ){
     vector<thread> thrs ;
     thrs.resize( count_thr ) ;
     for( int i = 0 ; i < count_thr ; i ++ ){
-        thrs[i] = thread( mem_bw_bench_module , i + 1 , args , instance_array_len ) ;
+        thrs[i] = thread( mem_bw_bench_module , i + 1 , args , instance_array_len ,
+                          a_start + instance_array_len * i ,
+                          b_start + instance_array_len * i ,
+                          c_start + instance_array_len * i ) ;
     }
     if( get_arg_flag( args.flags , FLAG_IS_RUN_PARALLEL ) ){
         for( auto &thr : thrs ){

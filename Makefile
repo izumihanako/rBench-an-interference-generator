@@ -1,3 +1,18 @@
+# configure options
+#----------------------#
+
+# support AVX512 or not, value can be "true" or "false"
+AVX512SUPPORT = false
+# link tool
+LD = g++  
+# C&C++ compiler
+CC = g++
+# .asm compiler 
+AS = as
+
+#----------------------#
+
+
 VERSION=0.0.1
 
 ROOTDIR = $(PWD)
@@ -7,14 +22,19 @@ KERNEL=$(shell uname -s)
 NODENAME=$(shell uname -n)
 
 CFLAGS = -Wall -Wextra -Wconversion -DVERSION='"$(VERSION)"' -std=gnu++11 -mcmodel=medium
-LD = g++
 LDLIBS = -pthread -fopenmp
-CC = g++
-AS = as
 
 # Default -O1 if optimization level not defined
 ifeq "$(findstring -O,$(CFLAGS))" ""
 	CFLAGS += -O1
+endif
+
+ifeq ($(AVX512SUPPORT),false)
+	AVX512FLAG = 
+	DAVX512 = 
+else 
+	AVX512FLAG = -mavx512f -mavx512bw -mavx512vl -mavx512cd -mavx512dq
+	DAVX512 = -DAVX512_SUPPORTED
 endif
 
 # Header files
@@ -32,7 +52,9 @@ SOI_SRC = \
 	rbench-cpu-tlb.cpp \
 	rbench-cpu-l1i.cpp \
 	rbench-mem-bw.cpp \
-	rbench-udp.cpp 
+	rbench-udp.cpp \
+	rbench-simd-avx.cpp \
+	rbench-simd-avx512.cpp
 
 # Source of interferences(SOI) core file
 CORE_SRC = \
@@ -54,6 +76,12 @@ rbench-cpu-l1i-kernel.o : rbench-cpu-l1igen.cpp
 	$(CC) $(CFLAGS) $< -o rbench-cpu-l1igen.exe
 	./rbench-cpu-l1igen.exe > rbench-cpu-l1i-kernel.asm
 	$(AS) -c rbench-cpu-l1i-kernel.asm -o $@ 
+
+rbench-simd-avx.o : rbench-simd-avx.cpp $(HEADERS)
+	$(CC) $(CFLAGS) -mavx -mavx2 -c rbench-simd-avx.cpp -o rbench-simd-avx.o
+
+rbench-simd-avx512.o : rbench-simd-avx512.cpp $(HEADERS)
+	$(CC) $(CFLAGS) -mavx -mavx2 $(AVX512FLAG) -c rbench-simd-avx512.cpp -o rbench-simd-avx512.o $(DAVX512)
 
 %.o : %.cpp $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
