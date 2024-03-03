@@ -7,6 +7,7 @@
 icmp
 temp_folder/*
 .vscode/
+udptest/icmp.cpp
 
 # Prerequisites
 *.d
