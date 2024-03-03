@@ -21,7 +21,7 @@ If you need to compile the AVX512 module, you need to change the value of `AVX51
 Then run the following command to run rbench:
 
 ```bash
-./rbench.exe
+./rbench.exe <args...>
 ```
 
 Running rbench without any arguments outputs a help message. Full help information is at the end of README.
