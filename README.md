@@ -53,7 +53,7 @@ Note that rbench itself has parameters to adjust CPU usage, e.g. the following c
 
 ## Sub-folders
 
-- sds_3Dtest: **NOT NECESSERY to run rBench.** Contains a 3D-illustrate for some programs, i.e., an illustrate of how the performance of the application varies with different cache resources and memory bandwidth resources.
+- app_3Dtest: **NOT NECESSERY to run rBench.** Contains a 3D-illustrate for some programs, i.e., an illustrate of how the performance of the application varies with different cache resources and memory bandwidth resources.
 - udptest:  **NOT NECESSERY to run rBench.** Some naive udp test program.
 - validate: **NOT NECESSERY to run rBench.** Includes some code to test the validity and focus of the rbench.
 
